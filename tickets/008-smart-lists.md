@@ -2,7 +2,7 @@
 Title: 智能列表
 Status: TODO
 Labels: frontend, features
-Estimate: M
+Estimate: 5
 PHASE: 1
 CYCLE: 1
 ---

@@ -2,7 +2,7 @@
 Title: 截止日期与重复提醒
 Status: TODO
 Labels: frontend, features, scheduling
-Estimate: L
+Estimate: 8
 PHASE: 1
 CYCLE: 1
 ---

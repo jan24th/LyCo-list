@@ -2,7 +2,7 @@
 Title: IndexedDB 数据模型与数据访问层
 Status: TODO
 Labels: frontend, data-layer
-Estimate: L
+Estimate: 8
 PHASE: 1
 CYCLE: 1
 ---

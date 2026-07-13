@@ -2,7 +2,7 @@
 Title: PWA 配置
 Status: TODO
 Labels: frontend, pwa
-Estimate: M
+Estimate: 5
 PHASE: 1
 CYCLE: 1
 ---

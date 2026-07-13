@@ -2,7 +2,7 @@
 Title: 搜索
 Status: TODO
 Labels: frontend, features
-Estimate: S
+Estimate: 3
 PHASE: 1
 CYCLE: 1
 ---

@@ -2,7 +2,7 @@
 Title: 项目脚手架
 Status: TODO
 Labels: frontend, setup
-Estimate: L
+Estimate: 8
 PHASE: 1
 CYCLE: 1
 ---

@@ -2,7 +2,7 @@
 Title: 浏览器通知
 Status: TODO
 Labels: frontend, pwa, notifications
-Estimate: M
+Estimate: 5
 PHASE: 1
 CYCLE: 1
 ---
