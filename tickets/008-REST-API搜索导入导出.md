@@ -6,6 +6,7 @@ Estimate: 5
 PHASE: 1
 CYCLE: 3
 Depends: 002-后端脚手架, 005-Prisma数据模型, 007-REST-API任务与子任务接口
+Source: .lychee/artifacts/designs/2026-07-13-lyco-list-todo-design.md
 ---
 
 # REST API 搜索导入导出

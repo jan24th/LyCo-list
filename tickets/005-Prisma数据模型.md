@@ -6,6 +6,7 @@ Estimate: 5
 PHASE: 1
 CYCLE: 1
 Depends: 001-Monorepo架构搭建
+Source: .lychee/artifacts/designs/2026-07-13-lyco-list-todo-design.md
 ---
 
 # Prisma 数据模型

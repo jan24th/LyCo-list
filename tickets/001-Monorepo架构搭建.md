@@ -5,7 +5,8 @@ Labels: frontend, backend, setup
 Estimate: 5
 PHASE: 1
 CYCLE: 1
-Depends: 无
+Depends:
+Source: .lychee/artifacts/designs/2026-07-13-lyco-list-todo-design.md
 ---
 
 # Monorepo 架构搭建

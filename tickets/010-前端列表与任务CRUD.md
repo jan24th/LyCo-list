@@ -6,6 +6,7 @@ Estimate: 8
 PHASE: 1
 CYCLE: 4
 Depends: 003-前端脚手架, 006-REST-API列表接口, 007-REST-API任务与子任务接口
+Source: .lychee/artifacts/designs/2026-07-13-lyco-list-todo-design.md
 ---
 
 # 前端列表与任务 CRUD
