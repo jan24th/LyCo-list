@@ -289,14 +289,14 @@ interface Task {
 
 1. Monorepo 搭建：`apps/web`、`apps/api`、`packages/shared`。
 2. 后端脚手架：Hono + Prisma + SQLite + Zod + Vitest。
-3. Prisma schema 与数据库 seed。
-4. REST API 接口：lists、tasks、subtasks、search、import/export。
+3. Prisma schema 与数据库 seed（采用 TDD 编写 schema 相关工具函数）。
+4. REST API 接口：lists、tasks、subtasks、search、import/export（每段业务逻辑均先写测试）。
 5. Bruno API 集合。
-6. 前端脚手架：React + Vite + TypeScript + Tailwind + TanStack Router/Query/Store/Form。
+6. 前端脚手架：React + Vite + TypeScript + Tailwind + TanStack Router/Query/Store/Form + Vitest。
 7. PWA 配置：manifest、Service Worker、安装提示。
-8. 前端 CRUD：自定义列表、任务、子任务、智能列表、搜索。
-9. 截止日期与重复提醒。
-10. 浏览器通知 via Service Worker。
+8. 前端 CRUD：自定义列表、任务、子任务、智能列表、搜索（采用 TDD）。
+9. 截止日期与重复提醒（采用 TDD）。
+10. 浏览器通知 via Service Worker（采用 TDD）。
 
 ### Phase 2：体验打磨（2–3 周）
 
@@ -331,6 +331,9 @@ interface Task {
 - 智能列表随任务增删改查正确更新。
 - 提醒通知在 PWA 安装后尽力而为地触发。
 - 数据库导出可以被全新实例导入并完整恢复数据。
+- 所有业务逻辑按 TDD 开发：测试先写，实现后写。
+- Vitest 覆盖率（statements、branches、functions、lines）达到 100%。
+- CI 阻止未通过测试或覆盖率不达标的合并。
 
 ## 待解决决策
 
