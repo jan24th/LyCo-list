@@ -5,6 +5,7 @@ Labels: frontend, backend, setup
 Estimate: 5
 PHASE: 1
 CYCLE: 1
+Depends: 无
 ---
 
 # Monorepo 架构搭建

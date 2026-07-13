@@ -5,6 +5,7 @@ Labels: backend, data-layer
 Estimate: 5
 PHASE: 1
 CYCLE: 1
+Depends: 001-Monorepo架构搭建
 ---
 
 # Prisma 数据模型

@@ -5,6 +5,7 @@ Labels: backend, api
 Estimate: 3
 PHASE: 1
 CYCLE: 3
+Depends: 002-后端脚手架, 005-Prisma数据模型
 ---
 
 # REST API 列表接口

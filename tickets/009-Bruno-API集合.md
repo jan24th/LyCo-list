@@ -5,6 +5,7 @@ Labels: tools, api
 Estimate: 3
 PHASE: 1
 CYCLE: 3
+Depends: 006-REST-API列表接口, 007-REST-API任务与子任务接口, 008-REST-API搜索导入导出
 ---
 
 # Bruno API 集合
