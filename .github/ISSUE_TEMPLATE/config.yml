@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: LyCo-list 设计文档
+    url: https://github.com/jan24th/LyCo-list
+    about: 创建 Issue 前请先确认设计权威文档中的对应章节。

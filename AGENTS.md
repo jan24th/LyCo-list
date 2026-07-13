@@ -46,7 +46,7 @@ LyCo-list/
 ├── packages/
 │   └── shared/       # 共享类型、schema、工具函数
 ├── bruno/            # Bruno API 请求集合
-├── tickets/          # Linear 风格的 markdown 工单
+├── .github/          # GitHub Issue 模板与项目协作配置
 ├── sst.config.ts     # SST 根配置
 └── .lychee/artifacts/
     ├── designs/       # 设计文档
@@ -57,7 +57,9 @@ LyCo-list/
 
 ### 任务规划
 - 实施计划存放在 `.lychee/artifacts/plans/`。
-- 计划从 `tickets/` 中的工单生成。
+- Ticket 使用 GitHub Issues 创建和维护，GitHub Projects 作为状态看板。
+- 实施计划从 GitHub Issue 生成，并在计划与 Issue 描述中互相链接。
+- Issue 应使用 `.github/ISSUE_TEMPLATE/` 中的模板，明确验收标准、测试要求和关联设计。
 - 所有业务逻辑和功能实现采用 TDD。
 
 ### 代码规范
@@ -120,4 +122,4 @@ LyCo-list/
 ## 设计权威
 
 - 当工单或计划与设计文档冲突时，以 `.lychee/artifacts/designs/` 中的设计文档为准。
-- 设计决策变更时，同步更新工单、README 和本文件。
+- 设计决策变更时，同步更新相关 GitHub Issue、README 和本文件。

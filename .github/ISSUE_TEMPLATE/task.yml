@@ -1,0 +1,52 @@
+name: 工程任务
+description: 创建一个非用户功能型工程 ticket
+title: "chore: "
+labels:
+  - task
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 说明这项工程任务要达成什么。
+      placeholder: 例如：初始化 Bun workspace 和基础质量门禁。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 范围
+      description: 列出涉及的目录、配置、脚本或文档。
+      placeholder: |
+        - ...
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 使用可验证的清单描述完成条件。
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: testing
+    attributes:
+      label: 验证方式
+      description: 写明命令、人工检查或不需要测试的理由。
+      placeholder: |
+        - [ ] bun check
+        - [ ] bun typecheck
+        - [ ] bun test
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: 关联资料
+      description: 关联设计文档、实施计划或依赖 Issue。
+    validations:
+      required: false

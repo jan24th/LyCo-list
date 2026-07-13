@@ -58,7 +58,7 @@ LyCo-list/
 ├── packages/
 │   └── shared/       # 共享类型、schema、工具函数
 ├── bruno/            # Bruno API 请求集合
-├── tickets/          # Linear 风格的 markdown 工单
+├── .github/          # GitHub Issue 模板与项目协作配置
 ├── sst.config.ts     # SST 根配置
 └── .lychee/artifacts/
     ├── designs/       # 设计文档
@@ -103,10 +103,12 @@ bun dev
 
 ## 开发规范
 
+- Ticket 使用 GitHub Issues 创建和维护，GitHub Projects 作为状态看板。
+- 复杂 Issue 的实施计划存放在 `.lychee/artifacts/plans/`，并在对应 Issue 中互相链接。
 - 所有业务逻辑采用 TDD（测试驱动开发）。
 - 覆盖率目标：statements、branches、functions、lines 均达到 100%。
 - 提交信息遵循约定式提交：`类型(范围): 描述`。
-- 当前实现待办见 `tickets/`，完整设计见 `.lychee/artifacts/designs/`。
+- 当前实现待办见 GitHub Issues/Projects，完整设计见 `.lychee/artifacts/designs/`。
 
 ## 许可证
 
