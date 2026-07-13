@@ -1,5 +1,5 @@
 ---
-Title: Search
+Title: 搜索
 Status: TODO
 Labels: frontend, features
 Estimate: S
@@ -7,40 +7,40 @@ PHASE: 1
 CYCLE: 1
 ---
 
-# Search
+# 搜索
 
 ## User Story
 
-As a user, I want to search my tasks by title and notes, so that I can quickly find specific items without browsing through lists.
+As a 用户，I want 按标题和备注搜索任务，So that 我可以不浏览列表就快速找到特定项目。
 
 ## Acceptance Criteria
 
-### Scenario 1: Search by title
+### Scenario 1: 按标题搜索
 
-Given tasks exist in the database
-When the user enters a keyword that matches a task title
-Then the matching tasks are returned in the search results
+Given 数据库中存在任务
+When 用户输入匹配任务标题的关键词
+Then 搜索结果返回匹配的任务
 
-### Scenario 2: Search by notes
+### Scenario 2: 按备注搜索
 
-Given tasks have notes
-When the user enters a keyword that appears in a task note
-Then the matching tasks are returned in the search results
+Given 任务包含备注
+When 用户输入出现在任务备注中的关键词
+Then 搜索结果返回匹配的任务
 
-### Scenario 3: Empty search results
+### Scenario 3: 空搜索结果
 
-Given no task matches the search keyword
-When the user submits the search
-Then an empty state is shown indicating no results
+Given 没有任务匹配搜索关键词
+When 用户提交搜索
+Then 显示空状态提示没有结果
 
-### Scenario 4: Clear search
+### Scenario 4: 清空搜索
 
-Given the user has entered a search term
-When they clear the search input
-Then the previous list view is restored
+Given 用户已输入搜索词
+When 他们清空搜索输入
+Then 恢复之前的列表视图
 
-### Scenario 5: Search performance
+### Scenario 5: 搜索性能
 
-Given there are thousands of tasks
-When the user types a search query
-Then results are returned within a reasonable time because the search uses IndexedDB indexes
+Given 存在数千条任务
+When 用户输入搜索查询
+Then 由于使用 IndexedDB 索引，结果在合理时间内返回

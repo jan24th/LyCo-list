@@ -1,5 +1,5 @@
 ---
-Title: Nested Subtasks
+Title: 无级嵌套子任务
 Status: TODO
 Labels: frontend, features
 Estimate: M
@@ -7,52 +7,52 @@ PHASE: 1
 CYCLE: 1
 ---
 
-# Nested Subtasks
+# 无级嵌套子任务
 
 ## User Story
 
-As a user, I want to create unlimited levels of subtasks under any task, so that I can break down work into smaller pieces while keeping the same task features for every level.
+As a 用户，I want 在任何任务下创建无限层级的子任务，So that 我可以把工作拆分成更小的部分，同时每个层级都拥有相同的任务功能。
 
 ## Acceptance Criteria
 
-### Scenario 1: Create a subtask
+### Scenario 1: 创建子任务
 
-Given a task exists
-When the user adds a subtask under it
-Then the subtask appears nested under the parent task
+Given 任务存在
+When 用户在其下添加子任务
+Then 子任务显示在父任务下方
 
-### Scenario 2: Subtask has full task features
+### Scenario 2: 子任务拥有完整任务功能
 
-Given a subtask exists
-When the user views its detail
-Then the subtask supports title, notes, priority, flag, due date, and reminders just like a parent task
+Given 子任务存在
+When 用户查看其详情
+Then 子任务支持标题、备注、优先级、旗标、截止日期和提醒，与父任务相同
 
-### Scenario 3: Delete parent task with subtasks
+### Scenario 3: 删除带子任务的父任务
 
-Given a parent task has subtasks
-When the user tries to delete the parent
-Then the app prevents deletion and shows a warning to remove or move subtasks first
+Given 父任务拥有子任务
+When 用户尝试删除父任务
+Then 应用阻止删除并显示警告，要求先移除或移动子任务
 
-### Scenario 4: Move parent task to another list
+### Scenario 4: 移动父任务到另一个列表
 
-Given a parent task has subtasks
-When the user moves the parent to another list
-Then all descendant subtasks are moved to the same list automatically
+Given 父任务拥有子任务
+When 用户将父任务移动到另一个列表
+Then 所有后代子任务自动移动到同一列表
 
-### Scenario 5: Cascade-complete prompt
+### Scenario 5: 级联完成提示
 
-Given a parent task has subtasks
-When the user marks the parent complete
-Then the app prompts whether to also complete all subtasks
+Given 父任务拥有子任务
+When 用户标记父任务完成
+Then 应用提示是否同时完成所有子任务
 
-### Scenario 6: Complete subtasks independently
+### Scenario 6: 独立完成子任务
 
-Given a subtask is incomplete
-When the user toggles it complete
-Then the subtask is marked complete without affecting the parent task state
+Given 子任务未完成
+When 用户切换其完成状态
+Then 子任务被标记完成，不影响父任务状态
 
-### Scenario 7: Display nested structure in task detail
+### Scenario 7: 在任务详情中展示嵌套结构
 
-Given a task has multiple levels of subtasks
-When the user opens the task detail
-Then the hierarchy is rendered clearly and each level is expandable
+Given 任务拥有多层子任务
+When 用户打开任务详情
+Then 层级结构清晰渲染，每个层级可展开

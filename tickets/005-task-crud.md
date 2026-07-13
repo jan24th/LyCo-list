@@ -1,5 +1,5 @@
 ---
-Title: Task CRUD
+Title: 任务增删改查
 Status: TODO
 Labels: frontend, features
 Estimate: M
@@ -7,52 +7,52 @@ PHASE: 1
 CYCLE: 1
 ---
 
-# Task CRUD
+# 任务增删改查
 
 ## User Story
 
-As a user, I want to create, edit, and delete tasks, so that I can manage my todo items efficiently.
+As a 用户，I want 创建、编辑和删除任务，So that 我可以高效地管理待办事项。
 
 ## Acceptance Criteria
 
-### Scenario 1: Create a task
+### Scenario 1: 创建任务
 
-Given the user is on any list view
-When they enter a task title and confirm
-Then a new task appears in the selected list
+Given 用户处于任意列表视图
+When 他们输入任务标题并确认
+Then 新任务出现在所选列表中
 
-### Scenario 2: Edit a task title
+### Scenario 2: 编辑任务标题
 
-Given a task exists
-When the user edits its title and saves
-Then the updated title is persisted and reflected in the list
+Given 任务存在
+When 用户编辑标题并保存
+Then 更新的标题被持久化并反映在列表中
 
-### Scenario 3: Add notes to a task
+### Scenario 3: 添加任务备注
 
-Given a task exists
-When the user adds or edits notes
-Then the notes are saved and visible in the task detail view
+Given 任务存在
+When 用户添加或编辑备注
+Then 备注被保存并在任务详情中可见
 
-### Scenario 4: Mark task as complete
+### Scenario 4: 标记任务完成
 
-Given a task is incomplete
-When the user toggles its completion status
-Then the task is marked complete and moved to the Completed smart list
+Given 任务未完成
+When 用户切换完成状态
+Then 任务被标记为完成并移动到已完成智能列表
 
-### Scenario 5: Mark task as incomplete
+### Scenario 5: 标记任务未完成
 
-Given a task is complete
-When the user toggles its completion status
-Then the task returns to its original list and smart lists update accordingly
+Given 任务已完成
+When 用户切换完成状态
+Then 任务返回原列表并且智能列表相应更新
 
-### Scenario 6: Delete a task
+### Scenario 6: 删除任务
 
-Given a task exists
-When the user deletes it
-Then the task is removed immediately with an undo option shown briefly
+Given 任务存在
+When 用户删除它
+Then 任务立即被移除并短暂显示撤销选项
 
-### Scenario 7: Set task priority and flag
+### Scenario 7: 设置任务优先级和旗标
 
-Given a task exists
-When the user sets priority to low, medium, or high, or toggles the flag
-Then the task displays the corresponding priority and flag indicators
+Given 任务存在
+When 用户设置优先级为低、中、高，或切换旗标
+Then 任务显示对应的优先级和旗标指示器

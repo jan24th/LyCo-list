@@ -1,5 +1,5 @@
 ---
-Title: Custom Lists
+Title: 自定义列表
 Status: TODO
 Labels: frontend, features
 Estimate: S
@@ -7,46 +7,46 @@ PHASE: 1
 CYCLE: 1
 ---
 
-# Custom Lists
+# 自定义列表
 
 ## User Story
 
-As a user, I want to organize my tasks into custom lists, so that I can separate work, personal, shopping, or other categories.
+As a 用户，I want 将任务组织到自定义列表中，So that 我可以区分工作、个人、购物等不同类别。
 
 ## Acceptance Criteria
 
-### Scenario 1: Create a custom list
+### Scenario 1: 创建自定义列表
 
-Given the user is on the sidebar
-When they create a new list with a name
-Then the list appears in the sidebar and can be selected
+Given 用户处于侧边栏
+When 他们创建带有名称的新列表
+Then 列表出现在侧边栏中并可以被选中
 
-### Scenario 2: Assign a color to a list
+### Scenario 2: 为列表指定颜色
 
-Given a custom list exists
-When the user selects a color
-Then the list indicator and related UI elements use that color
+Given 自定义列表存在
+When 用户选择颜色
+Then 列表指示器和相关 UI 元素使用该颜色
 
-### Scenario 3: Assign an icon to a list
+### Scenario 3: 为列表指定图标
 
-Given a custom list exists
-When the user selects an icon
-Then the icon appears next to the list name in the sidebar
+Given 自定义列表存在
+When 用户选择图标
+Then 图标显示在侧边栏中列表名称旁边
 
-### Scenario 4: Reorder custom lists
+### Scenario 4: 重新排序自定义列表
 
-Given multiple custom lists exist
-When the user drags a list in the sidebar
-Then the list order is updated and persisted
+Given 存在多个自定义列表
+When 用户在侧边栏中拖拽列表
+Then 列表顺序被更新并持久化
 
-### Scenario 5: Delete a custom list
+### Scenario 5: 删除自定义列表
 
-Given a custom list is empty or all tasks have been moved
-When the user deletes it
-Then the list is removed and its tasks are no longer accessible from that list
+Given 自定义列表为空或任务已全部移出
+When 用户删除它
+Then 列表被移除，其任务不再从该列表访问
 
-### Scenario 6: Move task to another list
+### Scenario 6: 移动任务到另一个列表
 
-Given a task exists in a list
-When the user moves it to another custom list
-Then the task appears in the target list and disappears from the source list
+Given 任务存在于某个列表
+When 用户将其移动到另一个自定义列表
+Then 任务出现在目标列表中并从源列表消失

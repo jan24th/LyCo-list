@@ -1,5 +1,5 @@
 ---
-Title: Smart Lists
+Title: 智能列表
 Status: TODO
 Labels: frontend, features
 Estimate: M
@@ -7,52 +7,52 @@ PHASE: 1
 CYCLE: 1
 ---
 
-# Smart Lists
+# 智能列表
 
 ## User Story
 
-As a user, I want pre-built views that automatically group my tasks, so that I can quickly see what is due today, scheduled, flagged, or already completed.
+As a 用户，I want 预置的视图自动聚合我的任务，So that 我可以快速查看今天到期、已计划、已标记或已完成的任务。
 
 ## Acceptance Criteria
 
-### Scenario 1: Today list
+### Scenario 1: 今天列表
 
-Given tasks have due dates in the local timezone
-When the user opens the Today smart list
-Then only incomplete tasks due today are shown, sorted by earliest due time then priority
+Given 任务在本地时区有截止日期
+When 用户打开今天智能列表
+Then 只显示今天到期的未完成任务，按最早到期时间和优先级排序
 
-### Scenario 2: Scheduled list
+### Scenario 2: 计划列表
 
-Given tasks have due dates
-When the user opens the Scheduled smart list
-Then all incomplete tasks with a due date are shown, sorted by due date ascending
+Given 任务有截止日期
+When 用户打开计划智能列表
+Then 显示所有有截止日期的未完成任务，按截止日期升序排列
 
-### Scenario 3: All list
+### Scenario 3: 全部列表
 
-Given there are incomplete tasks
-When the user opens the All smart list
-Then all incomplete tasks are shown, sorted by creation date descending
+Given 存在未完成任务
+When 用户打开全部智能列表
+Then 显示所有未完成任务，按创建日期降序排列
 
-### Scenario 4: Flagged list
+### Scenario 4: 已标记列表
 
-Given some tasks are flagged
-When the user opens the Flagged smart list
-Then all incomplete flagged tasks are shown, sorted by priority then due date
+Given 某些任务已被标记
+When 用户打开已标记智能列表
+Then 显示所有未完成的已标记任务，按优先级和截止日期排序
 
-### Scenario 5: Completed list
+### Scenario 5: 已完成列表
 
-Given some tasks are completed
-When the user opens the Completed smart list
-Then all completed tasks are shown, sorted by completion time descending
+Given 某些任务已完成
+When 用户打开已完成智能列表
+Then 显示所有已完成任务，按完成时间降序排列
 
-### Scenario 6: Include subtasks in smart lists
+### Scenario 6: 智能列表包含子任务
 
-Given a subtask has its own due date or flag
-When the user opens the corresponding smart list
-Then the subtask appears independently based on its own attributes
+Given 子任务拥有自己的截止日期或旗标
+When 用户打开对应的智能列表
+Then 子任务基于自身属性独立显示
 
-### Scenario 7: Default view
+### Scenario 7: 默认视图
 
-Given the user opens the app
-When no custom list is selected
-Then the default view is the first custom list, or Today if no custom lists exist
+Given 用户打开应用
+When 没有选择自定义列表
+Then 默认视图是第一个自定义列表，如果没有自定义列表则显示今天

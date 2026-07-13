@@ -1,5 +1,5 @@
 ---
-Title: Browser Notifications
+Title: 浏览器通知
 Status: TODO
 Labels: frontend, pwa, notifications
 Estimate: M
@@ -7,46 +7,46 @@ PHASE: 1
 CYCLE: 1
 ---
 
-# Browser Notifications
+# 浏览器通知
 
 ## User Story
 
-As a user, I want to receive reminder notifications when tasks are due, so that I do not miss important deadlines even if the app is not open.
+As a 用户，I want 在任务到期时收到提醒通知，So that 即使应用未打开我也不会错过重要截止日期。
 
 ## Acceptance Criteria
 
-### Scenario 1: Request notification permission
+### Scenario 1: 请求通知权限
 
-Given the user installs the app or enables notifications
-When the app requests permission
-Then the user can grant or deny browser notification access
+Given 用户安装应用或启用通知
+When 应用请求权限
+Then 用户可以授予或拒绝浏览器通知访问
 
-### Scenario 2: Register reminder with service worker
+### Scenario 2: 向 service worker 注册提醒
 
-Given a task has a reminder with a future trigger time
-When the reminder is saved
-Then the next trigger time is registered with the service worker
+Given 任务有未来触发时间的提醒
+When 提醒被保存
+Then 下一次触发时间被注册到 service worker
 
-### Scenario 3: Fire a reminder notification
+### Scenario 3: 触发提醒通知
 
-Given the app is installed as a PWA and permission is granted
-When a reminder trigger time is reached
-Then a browser notification is shown with the task title and due time
+Given 应用已作为 PWA 安装且权限已授予
+When 提醒触发时间到达
+Then 浏览器显示包含任务标题和截止时间的通知
 
-### Scenario 4: Handle recurring reminders
+### Scenario 4: 处理重复提醒
 
-Given a recurring reminder fires
-When the notification is shown
-Then the next occurrence is computed and re-registered with the service worker
+Given 重复提醒触发
+When 通知显示时
+Then 计算下一次出现时间并重新注册到 service worker
 
-### Scenario 5: Catch up overdue reminders on app open
+### Scenario 5: 应用打开时补检逾期提醒
 
-Given the app was closed when a reminder was due
-When the user reopens the app
-Then the app detects overdue reminders and surfaces them in a missed reminders list or badge
+Given 应用关闭时提醒已到期
+When 用户重新打开应用
+Then 应用检测到逾期提醒并在逾期提醒列表或徽标中展示
 
-### Scenario 6: Do not guarantee exact timing
+### Scenario 6: 不保证精确时间
 
-Given the browser or OS constrains background timers
-When a reminder is scheduled
-Then the app documents that notifications are best-effort and may be delayed
+Given 浏览器或操作系统限制后台定时器
+When 提醒被安排
+Then 应用说明通知是尽力而为，可能会延迟

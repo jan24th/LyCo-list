@@ -1,5 +1,5 @@
 ---
-Title: Database Import and Export
+Title: 数据库导入与导出
 Status: TODO
 Labels: frontend, data-layer
 Estimate: M
@@ -7,40 +7,40 @@ PHASE: 1
 CYCLE: 1
 ---
 
-# Database Import and Export
+# 数据库导入与导出
 
 ## User Story
 
-As a user, I want to back up and restore my todo data, so that I can migrate my data between devices or browsers without losing anything.
+As a 用户，I want 备份和恢复我的待办数据，So that 我可以在不同设备或浏览器之间迁移数据而不会丢失任何内容。
 
 ## Acceptance Criteria
 
-### Scenario 1: Export all data to JSON
+### Scenario 1: 导出所有数据为 JSON
 
-Given the user has lists and tasks
-When they trigger the export action
-Then a `.lyco.json` file is downloaded containing all lists and tasks plus a schema version
+Given 用户拥有列表和任务
+When 他们触发导出操作
+Then 下载一个 `.lyco.json` 文件，包含所有列表、任务以及 schema 版本
 
-### Scenario 2: Import data from JSON
+### Scenario 2: 从 JSON 导入数据
 
-Given the user selects a valid `.lyco.json` file
-When the import action completes
-Then the current IndexedDB contents are replaced with the imported data
+Given 用户选择了一个有效的 `.lyco.json` 文件
+When 导入操作完成
+Then 当前 IndexedDB 内容被替换为导入的数据
 
-### Scenario 3: Validate schema version
+### Scenario 3: 校验 schema 版本
 
-Given the imported file has a different schema version
-When the import is initiated
-Then the app detects the mismatch and runs an automatic migration to the latest schema
+Given 导入文件的 schema 版本不同
+When 开始导入
+Then 应用检测到版本不匹配并自动运行迁移到最新 schema
 
-### Scenario 4: Reject corrupted imports
+### Scenario 4: 拒绝损坏的导入文件
 
-Given the imported file is invalid JSON or missing required fields
-When the import is attempted
-Then the app shows an error and does not modify the existing database
+Given 导入文件是无效 JSON 或缺少必要字段
+When 尝试导入
+Then 应用显示错误并且不修改现有数据库
 
-### Scenario 5: Restore data after fresh install
+### Scenario 5: 在新安装后恢复数据
 
-Given a new browser instance opens the app
-When the user imports a previously exported `.lyco.json` file
-Then all lists, tasks, reminders, and subtasks are restored exactly
+Given 新的浏览器实例打开应用
+When 用户导入之前导出的 `.lyco.json` 文件
+Then 所有列表、任务、提醒和子任务被完整恢复
