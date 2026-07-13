@@ -97,12 +97,12 @@ interface Task {
   isCompleted: boolean;
   isFlagged: boolean;
   priority: 'none' | 'low' | 'medium' | 'high';
-  dueDate?: number;        // Unix timestamp (ms) at midnight local
+  dueDate?: number;        // Unix timestamp (ms) at midnight UTC; displayed in local timezone
   dueTime?: string;        // HH:MM
   order: number;           // Order among siblings
   reminders: Reminder[];
-  createdAt: number;
-  updatedAt: number;
+  createdAt: number;       // UTC timestamp
+  updatedAt: number;       // UTC timestamp
 }
 ```
 
@@ -114,21 +114,29 @@ interface Task {
 - Reminders are stored inside the task record for simplicity; the next occurrence is computed when the current one fires or when the recurrence rule changes.
 - Lists have a display order used for manual sorting.
 - Tasks have a sibling order; nested order is handled separately per parent.
+- **Timezone**: All dates/times are stored as UTC timestamps and displayed in the user's local timezone. The "Today" smart list uses the local date boundary.
+- **Deleting parent tasks**: A parent task with non-empty subtasks cannot be deleted until subtasks are removed or moved. The app shows an explicit error/warning.
+- **Moving parent tasks**: When a parent task is moved to another list, all descendant subtasks follow automatically.
+- **Recurring completion**: When a recurring task is completed, the task remains active and its due date and reminder advance to the next scheduled occurrence.
+- **Deleting tasks**: Tasks are hard-deleted immediately, but the UI shows a brief "Undo" snackbar for a few seconds to recover accidental deletions.
+- **Local data security**: Data is stored in plain text in IndexedDB for the MVP; encryption is out of scope until cloud sync is considered.
 
 ## Smart Lists Definition
 
-| List | Filter |
-|---|---|
-| Today | `dueDate` is today and `isCompleted === false` |
-| Scheduled | `dueDate` exists and `isCompleted === false` |
-| All | `isCompleted === false` |
-| Flagged | `isFlagged === true` and `isCompleted === false` |
-| Completed | `isCompleted === true` |
+| List | Filter | Sort |
+|---|---|---|
+| Today | `dueDate` is today and `isCompleted === false` | earliest due time first, then priority |
+| Scheduled | `dueDate` exists and `isCompleted === false` | due date ascending |
+| All | `isCompleted === false` | created desc |
+| Flagged | `isFlagged === true` and `isCompleted === false` | priority, then due date |
+| Completed | `isCompleted === true` | completed time descending |
 
-The default list view is the first custom list or Today if none exist.
+Custom lists use manual drag-and-drop ordering. The default list view is the first custom list or Today if none exist.
 
 ## Notification & Reminder Behavior
 
+- Web notifications are best-effort. The app does not guarantee millisecond-level reliability because PWA background timers are constrained by the OS and browser.
+- On app startup (and on foreground events), the app checks for reminders that are now overdue and surfaces them via in-app badges or a "missed reminders" list.
 - On creating/editing a reminder, the app registers the next trigger time with the Service Worker.
 - The Service Worker wakes up and checks due reminders using `self.registration.showNotification`.
 - For recurrence, after firing, the next trigger time is computed and stored; if no recurrence, the reminder is disabled.
@@ -143,12 +151,18 @@ The default list view is the first custom list or Today if none exist.
 ## Database Import / Export
 
 - Export: serialize all `List` and `Task` records into a JSON object with a schema version field.
-- Import: validate schema version, warn if mismatched, then replace the current IndexedDB contents in a transaction.
+- Import: validate schema version, then run an automatic migration if the export is from an older schema. The migration replaces the current IndexedDB contents in a transaction.
 - File extension: `.lyco.json`.
-- Future compatibility: bump schema version on breaking changes; older exports may be migrated with a transform function.
+
+## Search
+
+- Full-text search is performed against IndexedDB indexes on `Task.title` and `Task.notes`.
+- Results are returned in reverse chronological order (most recently updated first) by default.
+- Search is global and not scoped to the current list in the MVP.
 
 ## UI Structure
 
+- **Responsive navigation**: desktop uses a fixed left sidebar; mobile uses a header with a hamburger drawer.
 - **Sidebar / Navigation**: smart lists + custom lists + "New List" button.
 - **Main Pane**: list title, task list, add-task input at top.
 - **Task Detail Sheet/Modal**: title, notes, due date/time, reminders, priority, flag, list, subtasks.
