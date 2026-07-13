@@ -1,90 +1,168 @@
-# LyCo-list Todo App Design
+# LyCo-list 待办应用设计文档
 
-## Goal
+## 目标
 
-Build a Web App / PWA todo application that matches the core experience of Apple Reminders, starting with a local-first architecture and a clear path to cloud sync in later phases.
+构建一个功能对标 Apple Reminders 的 Web App / PWA 待办应用，从项目开始就采用清晰的前后端分离架构。前端是可安装的 PWA，后端是基于 Node 的 REST API，数据库使用 SQLite。
 
-## Tech Stack
+## 项目结构
 
-| Layer | Technology |
+```
+LyCo-list/
+├── apps/
+│   ├── web/                # React SPA（PWA）
+│   └── api/                # Hono REST API
+├── packages/
+│   └── shared/             # 共享类型、schema、工具函数
+├── bruno/                  # API 请求集合
+└── ...
+```
+
+## 技术栈
+
+### 前端
+
+| 层级 | 技术 |
 |---|---|
-| Framework | React + Vite + TypeScript |
-| Styling | Tailwind CSS |
-| Routing | TanStack Router |
-| Data Layer | TanStack Query + Dexie.js (IndexedDB) |
-| Client State | TanStack Store |
-| Forms | TanStack Form |
+| 框架 | React + Vite + TypeScript |
+| 样式 | Tailwind CSS |
+| 路由 | TanStack Router |
+| 数据获取 | TanStack Query |
+| 客户端状态 | TanStack Store |
+| 表单 | TanStack Form |
 | PWA | vite-plugin-pwa |
-| Notifications | Service Worker + Notification API |
-| Icons | Lucide React |
-| Utilities | date-fns, uuid |
+| 通知 | Service Worker + Notification API |
+| 图标 | Lucide React |
+| 工具库 | date-fns, uuid |
 
-## Scope
+### 后端
 
-### In MVP (Phase 1)
+| 层级 | 技术 |
+|---|---|
+| 框架 | Hono |
+| ORM | Prisma |
+| 数据库 | SQLite（MVP），后续可迁移至 PostgreSQL |
+| 校验 | Zod |
+| 测试 | Vitest |
+| API 客户端 | Bruno（集合存储在仓库中） |
 
-- **Tasks**: create, edit, delete, complete, priority, flag, due date, reminders.
-- **Unlimited nested subtasks**: child tasks have the same feature set as parent tasks; completing a parent task prompts to cascade-complete children.
-- **Custom lists**: name, color, icon, order.
-- **Smart lists**: Today, Scheduled, All, Flagged, Completed.
-- **Search**: full-text search across task titles and notes.
-- **Recurring reminders**: none, daily, weekly, biweekly, monthly, yearly, weekdays.
-- **Full-database import/export**: JSON backup and restore with version compatibility check.
-- **PWA offline support**: installable, Service Worker cached static assets, data persisted in IndexedDB.
-- **Browser notifications**: trigger reminders when PWA is installed and permission granted.
+## 范围
 
-### Out of MVP
+### MVP（Phase 1）包含
 
-- Cloud sync and user accounts.
-- Shared lists.
-- Location-based reminders.
-- Attachments/images.
-- Natural language input.
-- Siri / Shortcuts integration.
+- **前端**：React SPA，支持 PWA。
+- **后端**：Hono REST API + Prisma + SQLite。
+- **任务**：创建、编辑、删除、完成、优先级、旗标、截止日期、提醒。
+- **无级嵌套子任务**：子任务与父任务功能对等；父任务完成时提示是否一键完成子任务。
+- **自定义列表**：名称、颜色、图标、排序。
+- **智能列表**：今天、计划、全部、已标记、已完成。
+- **搜索**：基于标题和备注的全文搜索（后端实现）。
+- **重复提醒**：无、每天、每周、每两周、每月、每年、工作日。
+- **全库导入/导出**：通过后端 API 导出/导入 JSON 备份。
+- **PWA 可安装**：manifest、Service Worker、离线静态资源缓存。
+- **浏览器通知**：PWA 安装并授权后，尽力而为地触发提醒通知。
+- **Bruno API 集合**：开发阶段手动测试 API 的复用请求集合。
 
-## Architecture
+### MVP 不包含
 
-### Client-Side Data Flow
+- 用户账号与认证。
+- 多端云同步（Phase 3）。
+- 共享列表。
+- 位置提醒。
+- 附件/图片。
+- 自然语言输入。
+- Siri / Shortcuts 集成。
 
-1. UI components read from TanStack Query caches.
-2. TanStack Query `queryFn` wraps Dexie.js calls to IndexedDB.
-3. Mutations write to IndexedDB and invalidate relevant Query caches.
-4. TanStack Store holds ephemeral UI state: search query, active modals, selected task.
-5. Service Worker listens for scheduled reminders and fires Notification API events.
+## 架构
 
-### PWA Strategy
+### 前端数据流
 
-- Use `vite-plugin-pwa` to generate `manifest.json` and Service Worker.
-- Static assets are cached for offline use.
-- Application data lives in IndexedDB, not localStorage, to support larger volume and structured queries.
-- Reminder scheduling is done in the Service Worker because Web page timers are unreliable when the page is closed.
+1. UI 组件从 TanStack Query 缓存中读取数据。
+2. TanStack Query 的 `queryFn` 调用 Hono REST API。
+3. Mutations 发送 HTTP 请求到后端，并失效相关 Query 缓存。
+4. TanStack Store 保存临时 UI 状态：搜索关键词、当前弹窗、选中的任务。
+5. Service Worker 获取即将到来的提醒并触发本地通知。
 
-## Data Model
+### 后端数据流
+
+1. Hono 路由接收 HTTP 请求。
+2. Zod 校验请求体与查询参数。
+3. Prisma 对 SQLite 执行数据库操作。
+4. Controller 返回 JSON 响应。
+5. 导入/导出接口处理 `.lyco.json` 文件。
+
+### PWA 策略
+
+- 使用 `vite-plugin-pwa` 生成 `manifest.json` 和 Service Worker。
+- 静态资源缓存，支持离线访问应用壳。
+- 应用数据保存在后端 SQLite 数据库中，前端通过 TanStack Query 缓存。
+- MVP 不保证离线写入能力；离线时应用优雅降级。
+
+## 数据模型
+
+### Prisma Schema（后端）
+
+```prisma
+model List {
+  id        String   @id @default(uuid())
+  name      String
+  color     String
+  icon      String
+  order     Int
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Reminder {
+  id             String      @id @default(uuid())
+  taskId         String
+  task           Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  triggerAt      DateTime
+  recurrence     String      // 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'weekdays'
+  nextTriggerAt  DateTime?
+  isEnabled      Boolean     @default(true)
+}
+
+model Task {
+  id          String      @id @default(uuid())
+  title       String
+  notes       String      @default("")
+  listId      String
+  list        List        @relation(fields: [listId], references: [id], onDelete: Restrict)
+  parentId    String?
+  parent      Task?       @relation("TaskChildren", fields: [parentId], references: [id], onDelete: Restrict)
+  children    Task[]      @relation("TaskChildren")
+  isCompleted Boolean     @default(false)
+  isFlagged   Boolean     @default(false)
+  priority    String      @default("none") // 'none' | 'low' | 'medium' | 'high'
+  dueDate     DateTime?
+  dueTime     String?
+  order       Int
+  reminders   Reminder[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+```
+
+### TypeScript 接口（前端）
 
 ```typescript
 interface List {
   id: string;
   name: string;
-  color: string;        // Tailwind color token, e.g. "red-500"
-  icon: string;         // Lucide icon name, e.g. "house"
+  color: string;
+  icon: string;
   order: number;
-  createdAt: number;
-  updatedAt: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Reminder {
   id: string;
   taskId: string;
-  triggerAt: number;    // Unix timestamp (ms)
-  recurrence:
-    | 'none'
-    | 'daily'
-    | 'weekly'
-    | 'biweekly'
-    | 'monthly'
-    | 'yearly'
-    | 'weekdays';
-  nextTriggerAt?: number;
+  triggerAt: string;      // ISO 8601 UTC
+  recurrence: 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'weekdays';
+  nextTriggerAt?: string;  // ISO 8601 UTC
   isEnabled: boolean;
 }
 
@@ -93,131 +171,156 @@ interface Task {
   title: string;
   notes: string;
   listId: string;
-  parentId: string | null;   // null = root task
+  parentId: string | null;
   isCompleted: boolean;
   isFlagged: boolean;
   priority: 'none' | 'low' | 'medium' | 'high';
-  dueDate?: number;        // Unix timestamp (ms) at midnight UTC; displayed in local timezone
-  dueTime?: string;        // HH:MM
-  order: number;           // Order among siblings
+  dueDate?: string;        // ISO 8601 UTC 日期
+  dueTime?: string;         // HH:MM
+  order: number;
   reminders: Reminder[];
-  createdAt: number;       // UTC timestamp
-  updatedAt: number;       // UTC timestamp
+  createdAt: string;
+  updatedAt: string;
 }
 ```
 
-### Design Rules
+### 设计规则
 
-- Subtasks are first-class tasks; they can have their own reminders, due dates, priorities, and flags.
-- Smart lists aggregate tasks by their own attributes, including subtasks.
-- When a parent task is marked complete, the app prompts: "Also complete all subtasks?" with options "Yes", "No".
-- Reminders are stored inside the task record for simplicity; the next occurrence is computed when the current one fires or when the recurrence rule changes.
-- Lists have a display order used for manual sorting.
-- Tasks have a sibling order; nested order is handled separately per parent.
-- **Timezone**: All dates/times are stored as UTC timestamps and displayed in the user's local timezone. The "Today" smart list uses the local date boundary.
-- **Deleting parent tasks**: A parent task with non-empty subtasks cannot be deleted until subtasks are removed or moved. The app shows an explicit error/warning.
-- **Moving parent tasks**: When a parent task is moved to another list, all descendant subtasks follow automatically.
-- **Recurring completion**: When a recurring task is completed, the task remains active and its due date and reminder advance to the next scheduled occurrence.
-- **Deleting tasks**: Tasks are hard-deleted immediately, but the UI shows a brief "Undo" snackbar for a few seconds to recover accidental deletions.
-- **Local data security**: Data is stored in plain text in IndexedDB for the MVP; encryption is out of scope until cloud sync is considered.
+- 子任务是独立的一等任务，可以拥有独立的提醒、截止日期、优先级和旗标。
+- 智能列表根据任务自身属性聚合，包括子任务。
+- 父任务完成时，应用提示："是否同时完成所有子任务？"，提供"是"和"否"选项。
+- 列表拥有显示顺序，用于手动排序。
+- 任务拥有同级顺序，嵌套排序按父任务分别处理。
+- **时区**：后端所有日期时间以 UTC 存储，前端以用户本地时区展示；"今天"智能列表按本地日期边界计算。
+- **删除父任务**：非空父任务禁止删除，子任务必须先移除或移动；后端通过 `onDelete: Restrict` 强制执行。
+- **移动父任务**：父任务移动到另一个列表时，所有后代子任务自动跟随。
+- **重复任务完成**：重复任务完成后保持活跃，截止日期和提醒推进到下一次计划时间。
+- **删除任务**：任务立即硬删除，但 UI 短暂显示"撤销"提示。
+- **数据安全**：MVP 阶段 SQLite 数据以明文存储；加密待云端同步阶段再考虑。
 
-## Smart Lists Definition
+## REST API 概览
 
-| List | Filter | Sort |
+| 方法 | 路径 | 说明 |
 |---|---|---|
-| Today | `dueDate` is today and `isCompleted === false` | earliest due time first, then priority |
-| Scheduled | `dueDate` exists and `isCompleted === false` | due date ascending |
-| All | `isCompleted === false` | created desc |
-| Flagged | `isFlagged === true` and `isCompleted === false` | priority, then due date |
-| Completed | `isCompleted === true` | completed time descending |
+| GET | `/api/lists` | 获取所有列表 |
+| POST | `/api/lists` | 创建列表 |
+| PATCH | `/api/lists/:id` | 更新列表 |
+| DELETE | `/api/lists/:id` | 删除列表 |
+| GET | `/api/tasks` | 获取任务（支持智能列表过滤） |
+| POST | `/api/tasks` | 创建任务 |
+| GET | `/api/tasks/:id` | 获取任务详情，包含提醒和子任务 |
+| PATCH | `/api/tasks/:id` | 更新任务 |
+| DELETE | `/api/tasks/:id` | 删除任务 |
+| POST | `/api/tasks/:id/complete` | 切换任务完成状态 |
+| POST | `/api/tasks/:id/move` | 移动任务到另一个列表 |
+| GET | `/api/search` | 按标题/备注搜索任务 |
+| POST | `/api/export` | 导出数据库为 JSON |
+| POST | `/api/import` | 从 JSON 导入数据库 |
 
-Custom lists use manual drag-and-drop ordering. The default list view is the first custom list or Today if none exist.
+## 智能列表定义
 
-## Notification & Reminder Behavior
+| 列表 | 过滤条件 | 排序 |
+|---|---|---|
+| 今天 | `dueDate` 为今天且 `isCompleted === false` | 最早到期时间优先，其次优先级 |
+| 计划 | `dueDate` 存在且 `isCompleted === false` | 截止日期升序 |
+| 全部 | `isCompleted === false` | 创建时间降序 |
+| 已标记 | `isFlagged === true` 且 `isCompleted === false` | 优先级优先，其次截止日期 |
+| 已完成 | `isCompleted === true` | 完成时间降序 |
 
-- Web notifications are best-effort. The app does not guarantee millisecond-level reliability because PWA background timers are constrained by the OS and browser.
-- On app startup (and on foreground events), the app checks for reminders that are now overdue and surfaces them via in-app badges or a "missed reminders" list.
-- On creating/editing a reminder, the app registers the next trigger time with the Service Worker.
-- The Service Worker wakes up and checks due reminders using `self.registration.showNotification`.
-- For recurrence, after firing, the next trigger time is computed and stored; if no recurrence, the reminder is disabled.
-- Recurring rules use `date-fns` add helpers:
+自定义列表使用手动拖拽排序。默认视图是第一个自定义列表，如果没有自定义列表则显示"今天"。
+
+## 通知与提醒行为
+
+- Web 通知是尽力而为。由于 PWA 后台定时器受操作系统和浏览器限制，不保证毫秒级精确触发。
+- 应用启动或切回前台时，前端从后端获取逾期提醒，并在应用内展示徽章或"逾期提醒"列表。
+- 后端计算重复提醒的下一次触发时间。
+- 前端 Service Worker 从后端获取即将到来的提醒，并调度本地通知。
+- 重复规则使用 `date-fns` 的 add 助手函数：
   - `daily` -> `addDays(..., 1)`
   - `weekly` -> `addWeeks(..., 1)`
   - `biweekly` -> `addWeeks(..., 2)`
   - `monthly` -> `addMonths(..., 1)`
   - `yearly` -> `addYears(..., 1)`
-  - `weekdays` -> next Monday-Friday date
+  - `weekdays` -> 下一个周一到周五的日期
 
-## Database Import / Export
+## 数据库导入/导出
 
-- Export: serialize all `List` and `Task` records into a JSON object with a schema version field.
-- Import: validate schema version, then run an automatic migration if the export is from an older schema. The migration replaces the current IndexedDB contents in a transaction.
-- File extension: `.lyco.json`.
+- 导出：后端将所有 `List` 和 `Task` 记录序列化为带 schema 版本字段的 JSON 对象。
+- 导入：后端校验 schema 版本，若导出来自旧版本则自动迁移，并在一个事务中替换数据库内容。
+- 文件扩展名：`.lyco.json`。
+- 前端仅负责文件上传/下载，数据转换由后端完成。
 
-## Search
+## 搜索
 
-- Full-text search is performed against IndexedDB indexes on `Task.title` and `Task.notes`.
-- Results are returned in reverse chronological order (most recently updated first) by default.
-- Search is global and not scoped to the current list in the MVP.
+- 全文搜索由后端 API 驱动，针对 `Task.title` 和 `Task.notes` 查询。
+- 默认按最近更新时间降序返回结果。
+- MVP 阶段搜索是全局的，不按当前列表过滤。
 
-## UI Structure
+## Bruno API 集合
 
-- **Responsive navigation**: desktop uses a fixed left sidebar; mobile uses a header with a hamburger drawer.
-- **Sidebar / Navigation**: smart lists + custom lists + "New List" button.
-- **Main Pane**: list title, task list, add-task input at top.
-- **Task Detail Sheet/Modal**: title, notes, due date/time, reminders, priority, flag, list, subtasks.
-- **Search Bar**: filters current list or global based on context.
-- **Install Prompt**: banner/button for PWA install when criteria are met.
+- 在仓库根目录 `bruno/` 下以 `.bru` 文件形式存储 API 请求。
+- 集合包含 `development` 和 `production` 两种环境。
+- 每个接口对应一个请求，包含 create/update/import/export 的示例请求体。
+- Bruno 用于开发阶段手动 API 测试，以及团队内共享 API 示例。
 
-## Roadmap
+## UI 结构
 
-### Phase 1: MVP (5–7 weeks)
+- **响应式导航**：桌面端使用固定左侧边栏；移动端使用顶部标题栏 + 汉堡抽屉。
+- **侧边栏/导航**：智能列表 + 自定义列表 + "新建列表"按钮。
+- **主面板**：列表标题、任务列表、顶部添加任务输入框。
+- **任务详情抽屉/弹窗**：标题、备注、截止日期/时间、提醒、优先级、旗标、列表、子任务。
+- **搜索栏**：根据上下文过滤当前列表或全局搜索。
+- **安装提示**：满足条件时显示 PWA 安装横幅/按钮。
 
-1. Project scaffolding with Vite, React, TypeScript, Tailwind, TanStack Router/Query/Store/Form.
-2. PWA setup with manifest and Service Worker.
-3. IndexedDB schema and Dexie.js data access layer.
-4. Full-database import/export (JSON backup/restore).
-5. Task CRUD, completion, priority, flag.
-6. Unlimited nested subtasks with cascade-complete prompt.
-7. Custom lists with color/icon.
-8. Smart lists: Today, Scheduled, All, Flagged, Completed.
-9. Search.
-10. Due dates and recurring reminders.
-11. Browser notifications via Service Worker.
+## 路线图
 
-### Phase 2: Polish (2–3 weeks)
+### Phase 1：MVP（6–8 周）
 
-- Drag-and-drop reordering within/across lists and nesting levels.
-- Bulk actions: complete, move, delete, flag.
-- Keyboard shortcuts.
-- Empty states and onboarding.
-- Animations and transitions.
-- Import additional formats (ICS, CSV).
+1. Monorepo 搭建：`apps/web`、`apps/api`、`packages/shared`。
+2. 后端脚手架：Hono + Prisma + SQLite + Zod + Vitest。
+3. Prisma schema 与数据库 seed。
+4. REST API 接口：lists、tasks、subtasks、search、import/export。
+5. Bruno API 集合。
+6. 前端脚手架：React + Vite + TypeScript + Tailwind + TanStack Router/Query/Store/Form。
+7. PWA 配置：manifest、Service Worker、安装提示。
+8. 前端 CRUD：自定义列表、任务、子任务、智能列表、搜索。
+9. 截止日期与重复提醒。
+10. 浏览器通知 via Service Worker。
 
-### Phase 3: Cloud Sync (4–6 weeks)
+### Phase 2：体验打磨（2–3 周）
 
-- User accounts (Supabase or Clerk).
-- Multi-device sync.
-- Conflict resolution strategy: last-write-wins with optional manual merge.
-- Optional real-time sync via WebSocket/Supabase Realtime.
-- Shared lists (read-only and collaborative).
+- 列表内/列表间/层级间拖拽排序。
+- 批量操作：完成、移动、删除、标记。
+- 键盘快捷键。
+- 空状态与引导。
+- 动画与过渡。
+- 导入其他格式（ICS、CSV）。
 
-### Phase 4: Advanced Features (as needed)
+### Phase 3：云端同步（4–6 周）
 
-- Natural language input for date/time parsing.
-- Location-based reminders.
-- Attachments and images.
-- Siri Shortcuts / share target integration.
-- PWA widgets and quick actions.
+- 用户账号（JWT 或 OAuth）。
+- 多端同步与冲突处理。
+- 可选 WebSocket 或 SSE 实时同步。
+- 共享列表（只读与协作）。
 
-## Success Criteria
+### Phase 4：高级功能（按需）
 
-- App works offline in the browser and as an installed PWA.
-- Data survives page refresh and browser restart.
-- Reminder notifications fire on time when PWA is installed and permission granted.
-- Smart lists update correctly as tasks are created, edited, or completed.
-- Database export can be imported into a fresh browser instance and restore all data.
+- 自然语言输入解析日期/时间。
+- 位置提醒。
+- 附件与图片。
+- Siri Shortcuts / share target 集成。
+- PWA 小组件与快捷操作。
 
-## Open Decisions (to resolve before planning)
+## 成功标准
 
-None. All major decisions in this version have been validated with the user.
+- 前后端在开发环境中可以独立启动。
+- API 接口返回正确 JSON，并有 Bruno 请求覆盖。
+- 应用可安装为 PWA。
+- 任务、列表、提醒持久化在后端 SQLite 数据库中。
+- 智能列表随任务增删改查正确更新。
+- 提醒通知在 PWA 安装后尽力而为地触发。
+- 数据库导出可以被全新实例导入并完整恢复数据。
+
+## 待解决决策
+
+无。本版本所有重大决策均已与用户确认。
