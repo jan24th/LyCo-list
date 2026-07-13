@@ -4,7 +4,7 @@ Status: TODO
 Labels: tools, api
 Estimate: 3
 PHASE: 1
-CYCLE: 4
+CYCLE: 3
 ---
 
 # Bruno API 集合
