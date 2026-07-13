@@ -177,7 +177,7 @@ cleanup Lambda ───────────────► DynamoDB
 
 ### 项目管理流程
 
-- Ticket 使用 GitHub Issues 创建和维护，GitHub Projects 作为状态看板。
+- Issue 使用 GitHub Issues 创建和维护，GitHub Projects 作为状态看板。
 - Issue 应包含背景、范围、验收标准、测试要求和关联设计章节。
 - 复杂 Issue 的实施计划存放在 `.lychee/artifacts/plans/`，计划文件与对应 GitHub Issue 互相链接。
 - 当 Issue 或计划与本文档冲突时，以本文档为准；设计变更需要同步更新相关 Issue、README 和 AGENTS.md。

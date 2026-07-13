@@ -1,6 +1,6 @@
 # GitHub Projects 工作流
 
-LyCo-list 使用 GitHub Issues 作为 ticket 权威来源，使用 GitHub Projects 作为状态看板。
+LyCo-list 使用 GitHub Issues 作为 Issue 权威来源，使用 GitHub Projects 作为状态看板。
 
 ## Project
 
@@ -24,7 +24,7 @@ LyCo-list 使用 GitHub Issues 作为 ticket 权威来源，使用 GitHub Projec
 
 ## Issue 规则
 
-- 每个 ticket 使用 GitHub Issue 表达，优先使用 `.github/ISSUE_TEMPLATE/` 中的模板。
+- 每个任务使用 GitHub Issue 表达，优先使用 `.github/ISSUE_TEMPLATE/` 中的模板。
 - Issue 标题使用约定式前缀：`feat: ...`、`fix: ...`、`chore: ...`、`docs: ...`、`test: ...`。
 - 复杂 Issue 在实现前创建计划文件，并在 Issue 与计划文件中互相链接。
 - Issue 或计划与 `.lychee/artifacts/designs/` 冲突时，以设计文档为准。

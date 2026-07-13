@@ -103,7 +103,7 @@ bun dev
 
 ## 开发规范
 
-- Ticket 使用 GitHub Issues 创建和维护，GitHub Projects 作为状态看板。
+- Issue 使用 GitHub Issues 创建和维护，GitHub Projects 作为状态看板。
 - 复杂 Issue 的实施计划存放在 `.lychee/artifacts/plans/`，并在对应 Issue 中互相链接。
 - 所有业务逻辑采用 TDD（测试驱动开发）。
 - 覆盖率目标：statements、branches、functions、lines 均达到 100%。
