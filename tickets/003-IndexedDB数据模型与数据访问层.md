@@ -4,7 +4,7 @@ Status: TODO
 Labels: frontend, data-layer
 Estimate: 8
 PHASE: 1
-CYCLE: 1
+CYCLE: 2
 ---
 
 # IndexedDB 数据模型与数据访问层
