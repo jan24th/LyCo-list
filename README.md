@@ -2,16 +2,19 @@
 
 Lychee & Coco Todo List —— 一个对标 Apple Reminders 的 PWA 待办应用。
 
+> 当前实现以 `.lychee/artifacts/designs/2026-07-13-lyco-list-design.md` 为权威设计。README 中的技术栈已与设计文档对齐，原 Hono + Prisma + SQLite 方案已被 AWS Serverless 方案替代。
+
 ## 功能特性
 
 - **任务与列表**：创建、编辑、完成和删除任务，支持自定义列表。
 - **无级嵌套子任务**：子任务是独立的一等任务，拥有独立的提醒、截止日期和优先级。
-- **智能列表**：今天、计划、全部、已标记、已完成。
+- **智能列表**：今天、计划、全部、已标记、已完成、**分配给我**。
+- **Assign 任务**：一个任务可以分配给多个用户，被分配者收到浏览器通知。
 - **截止日期与重复提醒**：支持每天、每周、每两周、每月、每年、工作日重复。
 - **搜索**：基于任务标题和备注的全文搜索。
-- **导入/导出**：通过 `.lyco.json` 文件备份和恢复整个数据库。
 - **PWA**：可安装为应用，支持离线应用壳缓存。
-- **浏览器通知**：通过 Service Worker 尽力而为地触发提醒通知。
+- **浏览器通知**：通过 Service Worker 尽力而为地触发提醒通知和分配通知。
+- **家庭共享**：所有登录用户共享同一组列表和任务数据。
 
 ## 技术栈
 
@@ -19,9 +22,11 @@ Lychee & Coco Todo List —— 一个对标 Apple Reminders 的 PWA 待办应用
 |---|---|
 | 包管理器 | Bun workspaces |
 | 前端 | React + Vite + TypeScript |
-| 后端 | Hono + Prisma + SQLite |
+| 后端 | AWS Lambda + API Gateway + DynamoDB + Cognito |
+| 部署 | SST v3 |
 | 共享包 | `packages/shared`（类型、schema、工具函数） |
 | 样式 | Tailwind CSS |
+| 基础组件 | shadcn/ui |
 | 路由 | TanStack Router |
 | 数据获取 | TanStack Query |
 | 客户端状态 | TanStack Store |
@@ -38,11 +43,21 @@ Lychee & Coco Todo List —— 一个对标 Apple Reminders 的 PWA 待办应用
 LyCo-list/
 ├── apps/
 │   ├── web/          # React PWA 前端
-│   └── api/          # Hono REST API
+│   └── api/          # Lambda 函数 + SST 配置
+│       ├── functions/
+│       │   ├── lists/
+│       │   ├── tasks/
+│       │   ├── reminders/
+│       │   ├── search/
+│       │   ├── users/
+│       │   ├── notifications/
+│       │   └── health/
+│       └── sst.config.ts
 ├── packages/
 │   └── shared/       # 共享类型、schema、工具函数
 ├── bruno/            # Bruno API 请求集合
 ├── tickets/          # Linear 风格的 markdown 工单
+├── sst.config.ts     # SST 根配置
 └── .lychee/artifacts/
     ├── designs/       # 设计文档
     └── plans/         # 实施计划
@@ -52,6 +67,7 @@ LyCo-list/
 
 环境要求：
 - 已安装 [Bun](https://bun.sh/)
+- 已配置 AWS 凭证（用于 `sst dev`）
 
 安装依赖：
 
@@ -59,11 +75,10 @@ LyCo-list/
 bun install
 ```
 
-启动后端：
+启动后端（SST 开发环境）：
 
 ```bash
-cd apps/api
-bun dev
+sst dev
 ```
 
 启动前端：

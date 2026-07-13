@@ -10,9 +10,11 @@ LyCo-list 是一个对标 Apple Reminders 的 PWA 待办应用。采用前后端
 |---|---|
 | 包管理器 | Bun workspaces |
 | 前端 | React + Vite + TypeScript |
-| 后端 | Hono + Prisma + SQLite |
+| 后端 | AWS Lambda + API Gateway + DynamoDB + Cognito |
+| 部署 | SST v3 |
 | 共享包 | `packages/shared`（类型、schema、工具函数） |
 | 样式 | Tailwind CSS |
+| 基础组件 | shadcn/ui |
 | 路由 | TanStack Router |
 | 数据获取 | TanStack Query |
 | 客户端状态 | TanStack Store |
@@ -29,11 +31,21 @@ LyCo-list 是一个对标 Apple Reminders 的 PWA 待办应用。采用前后端
 LyCo-list/
 ├── apps/
 │   ├── web/          # React PWA 前端
-│   └── api/          # Hono REST API
+│   └── api/          # Lambda 函数 + SST 配置
+│       ├── functions/
+│       │   ├── lists/
+│       │   ├── tasks/
+│       │   ├── reminders/
+│       │   ├── search/
+│       │   ├── users/
+│       │   ├── notifications/
+│       │   └── health/
+│       └── sst.config.ts
 ├── packages/
 │   └── shared/       # 共享类型、schema、工具函数
 ├── bruno/            # Bruno API 请求集合
 ├── tickets/          # Linear 风格的 markdown 工单
+├── sst.config.ts     # SST 根配置
 └── .lychee/artifacts/
     ├── designs/       # 设计文档
     └── plans/         # 实施计划
@@ -59,6 +71,7 @@ LyCo-list/
 - 覆盖率目标：statements、branches、functions、lines 均达到 100%。
 - 覆盖率通过 Vitest 配置阈值强制生效。
 - 每个 bug 修复和业务逻辑变更都必须附带测试。
+- AWS 服务相关代码优先使用 DynamoDB Local 做集成测试，避免纯 mock。
 
 ### Git 提交
 - 遵循约定式提交：`类型(范围): 描述`。
@@ -77,7 +90,8 @@ LyCo-list/
 
 - 禁止批量导出环境变量（`env`、`printenv`、`set | grep`）。
 - 检查特定变量时使用 `echo $VAR_NAME`。
-- 禁止提交 secrets、`.env` 或本地数据库文件。
+- 禁止提交 secrets、`.env`、本地数据库文件或 AWS 凭证文件。
+- 禁止在代码中硬编码 AWS access key / secret key。
 
 ## 危险操作
 
@@ -85,9 +99,11 @@ LyCo-list/
 - `git push --force`
 - `git reset --hard`（存在未提交变更时）
 - 批量删除（`rm -rf`）
-- 数据库表删除或截断
+- DynamoDB 表删除或截断
+- `sst remove` 删除生产环境资源
+- 修改 Cognito User Pool 导致用户无法登录的配置变更
 
 ## 设计权威
 
 - 当工单或计划与设计文档冲突时，以 `.lychee/artifacts/designs/` 中的设计文档为准。
-- 设计决策变更时，同步更新工单。
+- 设计决策变更时，同步更新工单、README 和本文件。
