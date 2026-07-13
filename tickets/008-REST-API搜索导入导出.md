@@ -29,13 +29,13 @@ Then 返回包含 schema 版本的 JSON 数据
 
 ### Scenario 3: 导入数据库
 
-Given 上传有效的 `.lyco.json` 文件
+Given 通过 multipart/form-data 上传有效的 `.lyco.json` 文件
 When 调用 `POST /api/import`
 Then 数据库内容被替换为导入的数据
 
 ### Scenario 4: 导入旧版本数据自动迁移
 
-Given 导入文件 schema 版本较旧
+Given 通过 multipart/form-data 上传 schema 版本较旧的 `.lyco.json` 文件
 When 调用 `POST /api/import`
 Then 后端自动迁移数据到最新 schema
 

@@ -43,7 +43,7 @@ Then 任务更新并持久化到后端
 
 Given 任务未完成
 When 用户点击完成按钮
-Then 任务标记为完成并移动到已完成列表
+Then 任务标记为完成，并出现在"已完成"智能列表中
 
 ### Scenario 6: 删除任务并撤销
 
@@ -55,9 +55,15 @@ Then 任务被移除，并短暂显示撤销按钮
 
 Given 任务存在
 When 用户选择新列表
-Then 任务移动到新列表
+Then 任务移动到新列表，子任务跟随移动
 
-### Scenario 8: TDD 开发与 100% 覆盖率
+### Scenario 8: 创建子任务
+
+Given 任务存在
+When 用户在该任务下添加子任务
+Then 子任务显示在父任务详情中
+
+### Scenario 9: TDD 开发与 100% 覆盖率
 
 Given 项目要求 TDD
 When 为前端 CRUD 组件和 hooks 编写测试

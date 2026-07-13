@@ -31,7 +31,7 @@ Then 模型包含 title、notes、listId、parentId、isCompleted、isFlagged、
 
 Given Prisma schema 存在
 When 定义 `Reminder` 模型
-Then 模型包含 taskId、triggerAt、recurrence、nextTriggerAt、isEnabled 字段，并级联删除关联 Task
+Then 模型包含 taskId、triggerAt、recurrence、nextTriggerAt、isEnabled 字段，并在关联的 Task 被删除时级联删除
 
 ### Scenario 4: 生成并运行 migration
 
@@ -39,10 +39,10 @@ Given schema 已定义
 When 运行 `prisma migrate dev`
 Then 数据库表结构正确创建
 
-### Scenario 5: 编写 schema 相关工具函数测试
+### Scenario 5: 为迁移和 seed 工具函数编写测试
 
 Given 项目要求 TDD 和 100% 覆盖率
-When 为模型工具函数编写测试
+When 为数据库初始化、迁移运行和 seed 相关的工具函数编写测试
 Then 测试先失败，实现后通过，覆盖率达到 100%
 
 ### Scenario 6: 创建数据库 seed

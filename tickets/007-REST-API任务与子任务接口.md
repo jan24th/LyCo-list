@@ -57,7 +57,13 @@ Given 任务存在
 When 调用 `DELETE /api/tasks/:id`
 Then 非空父任务被拒绝删除，叶子任务被删除
 
-### Scenario 8: TDD 开发与 100% 覆盖率
+### Scenario 8: 创建子任务
+
+Given 父任务存在
+When 调用 `POST /api/tasks` 并传入 `parentId`
+Then 新任务作为子任务创建，并返回包含 parentId 的任务对象
+
+### Scenario 9: TDD 开发与 100% 覆盖率
 
 Given 项目要求 TDD
 When 为任务接口编写测试
