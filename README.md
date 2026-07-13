@@ -10,10 +10,11 @@ Lychee & Coco Todo List —— 一个对标 Apple Reminders 的 PWA 待办应用
 - **无级嵌套子任务**：子任务是独立的一等任务，拥有独立的提醒、截止日期和优先级。
 - **智能列表**：今天、计划、全部、已标记、已完成、**分配给我**。
 - **Assign 任务**：一个任务可以分配给多个用户，被分配者收到浏览器通知。
-- **截止日期与重复提醒**：支持每天、每周、每两周、每月、每年、工作日重复。
-- **搜索**：基于任务标题和备注的全文搜索。
+- **截止日期与重复任务/提醒**：支持每天、每周、每两周、每月、每年、工作日重复，并按 IANA 时区计算。
+- **搜索**：基于任务标题和备注的 Unicode 规范化、大小写不敏感包含匹配。
 - **PWA**：可安装为应用，支持离线应用壳缓存。
-- **浏览器通知**：通过 Service Worker 尽力而为地触发提醒通知和分配通知。
+- **浏览器通知**：应用启动、恢复前台或保持可见时检查提醒和分配通知；MVP 不保证应用完全关闭后的通知。
+- **安全删除**：任务和列表支持短暂撤销，后台延迟清理关联数据。
 - **家庭共享**：所有登录用户共享同一组列表和任务数据。
 
 ## 技术栈
@@ -22,7 +23,7 @@ Lychee & Coco Todo List —— 一个对标 Apple Reminders 的 PWA 待办应用
 |---|---|
 | 包管理器 | Bun workspaces |
 | 前端 | React + Vite + TypeScript |
-| 后端 | AWS Lambda + API Gateway + DynamoDB + Cognito |
+| 后端 | AWS Lambda（Node.js 24）+ API Gateway + DynamoDB + Cognito |
 | 部署 | SST v3 |
 | 共享包 | `packages/shared`（类型、schema、工具函数） |
 | 样式 | Tailwind CSS |
@@ -51,6 +52,7 @@ LyCo-list/
 │       │   ├── search/
 │       │   ├── users/
 │       │   ├── notifications/
+│       │   ├── cleanup/
 │       │   └── health/
 │       └── sst.config.ts
 ├── packages/
@@ -72,7 +74,7 @@ LyCo-list/
 安装依赖：
 
 ```bash
-bun install
+bun install --registry https://registry.npmmirror.com
 ```
 
 启动后端（SST 开发环境）：
