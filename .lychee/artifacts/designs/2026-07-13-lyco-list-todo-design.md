@@ -23,6 +23,8 @@ LyCo-list/
 
 | 层级 | 技术 |
 |---|---|
+| 包管理器 | Bun |
+| 代码规范 | Biome（替代 ESLint + Prettier） |
 | 框架 | React + Vite + TypeScript |
 | 样式 | Tailwind CSS |
 | 路由 | TanStack Router |
@@ -38,6 +40,8 @@ LyCo-list/
 
 | 层级 | 技术 |
 |---|---|
+| 包管理器 | Bun |
+| 代码规范 | Biome |
 | 框架 | Hono |
 | ORM | Prisma |
 | 数据库 | SQLite（MVP），后续可迁移至 PostgreSQL |
@@ -89,6 +93,13 @@ LyCo-list/
 3. Prisma 对 SQLite 执行数据库操作。
 4. Controller 返回 JSON 响应。
 5. 导入/导出接口处理 `.lyco.json` 文件。
+
+### Monorepo 与代码规范
+
+- 使用 Bun workspace 管理 `apps/web`、`apps/api` 和 `packages/shared` 的依赖。
+- 根目录 `biome.json` 统一配置格式化与校验规则，覆盖所有子包。
+- 开发阶段使用 `bunx @biomejs/biome check` 做代码检查；CI 阶段使用 `bunx @biomejs/biome ci`。
+- 前后端共享 `packages/shared` 的类型与校验 schema。
 
 ### PWA 策略
 
