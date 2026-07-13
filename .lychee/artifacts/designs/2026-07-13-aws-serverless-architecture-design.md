@@ -21,7 +21,7 @@ API Gateway HTTP API（v2）
   │
   ├─ Cognito JWT 授权器
   ▼
-Lambda（每个 HTTP 接口一个独立函数）
+Lambda（按资源域拆分的函数：lists、tasks、reminders、search、import/export）
   │
   ▼
 DynamoDB（单表，按 userId 隔离）
@@ -78,12 +78,11 @@ LyCo-list/
 │   ├── web/                # React PWA 前端
 │   └── api/                # Lambda 函数 + SST 配置
 │       ├── functions/
-│       │   ├── auth/       # 预留：登录相关辅助函数（MVP 用 Hosted UI）
-│       │   ├── lists/      # list 接口 Lambda
-│       │   ├── tasks/      # task 接口 Lambda
-│       │   ├── reminders/  # reminder 接口 Lambda
-│       │   ├── search/     # 搜索接口 Lambda
-│       │   └── export/     # 导入/导出接口 Lambda
+│       │   ├── lists/      # lists 域 Lambda：内部路由 GET/POST/PATCH/DELETE
+│       │   ├── tasks/      # tasks 域 Lambda：含子任务、完成、移动等
+│       │   ├── reminders/  # reminders 域 Lambda
+│       │   ├── search/     # search 域 Lambda
+│       │   └── transfer/   # import/export 域 Lambda
 │       └── sst.config.ts
 ├── packages/
 │   └── shared/             # 类型、Zod schema、DynamoDB 访问工具、响应包装
@@ -98,6 +97,12 @@ LyCo-list/
 - 前端自定义域名：`app.example.com`，CNAME 指向 CloudFront 分配。
 - API 自定义域名：`api.example.com`，CNAME 指向 API Gateway 自定义域名。
 - Cognito Hosted UI 自定义域名：`auth.example.com`（可选，MVP 建议使用）。
+
+## API 限流
+
+- API Gateway HTTP API 配置默认限流，防止意外流量放大账单。
+- 具体阈值在实现阶段根据 2 人使用的实际请求量设定，例如每秒 100 请求、突发 200。
+- MVP 不配 WAF。
 
 ## 认证
 
@@ -187,6 +192,18 @@ LyCo-list/
 
 属性：`triggerAt`, `recurrence`, `nextTriggerAt`, `isEnabled`。
 
+### GSI 数量
+
+只保留 **1 个 GSI（GSI1）**，覆盖以下访问模式：
+- `LIST#<listId>` → 查询该列表下的任务
+- `TASK#<parentId>#CHILDREN` → 查询某任务的子任务
+- `TASK#<taskId>#REMINDERS` → 查询某任务的所有提醒
+
+智能列表（今天、计划、已标记、已完成等）在 Lambda 内过滤。理由：
+- 项目只有 2 个用户，数据量极小，过滤成本可忽略
+- GSI 过多会增加写放大和架构复杂度
+- 未来如某个查询成为瓶颈，可再增加 GSI
+
 ### 主要查询模式
 
 | 场景 | 查询方式 |
@@ -202,26 +219,35 @@ LyCo-list/
 
 ### 接口粒度
 
-每个 HTTP 方法 + 路径对应一个独立 Lambda 函数。API Gateway 负责路由、路径参数解析、CORS 和 JWT 授权。
+按资源域拆分 Lambda。每个资源域一个 Lambda 函数，函数内部根据 `event.requestContext.http.method` 和 `event.rawPath` 做轻量级路由分发。API Gateway 负责把同域下所有路径和方法路由到同一个 Lambda，并处理 CORS 和 JWT 授权。
+
+例如 `lists` Lambda 处理：
+
+| 方法 | 路径 |
+|---|---|
+| GET | `/api/lists` |
+| POST | `/api/lists` |
+| PATCH | `/api/lists/{id}` |
+| DELETE | `/api/lists/{id}` |
 
 ### 接口列表
 
-| 方法 | 路径 | Lambda 函数 |
+| 方法 | 路径 | 所属 Lambda |
 |---|---|---|
-| GET | `/api/lists` | `functions/lists/get.ts` |
-| POST | `/api/lists` | `functions/lists/create.ts` |
-| PATCH | `/api/lists/{id}` | `functions/lists/update.ts` |
-| DELETE | `/api/lists/{id}` | `functions/lists/delete.ts` |
-| GET | `/api/tasks` | `functions/tasks/get.ts` |
-| POST | `/api/tasks` | `functions/tasks/create.ts` |
-| GET | `/api/tasks/{id}` | `functions/tasks/getById.ts` |
-| PATCH | `/api/tasks/{id}` | `functions/tasks/update.ts` |
-| DELETE | `/api/tasks/{id}` | `functions/tasks/delete.ts` |
-| POST | `/api/tasks/{id}/complete` | `functions/tasks/toggleComplete.ts` |
-| POST | `/api/tasks/{id}/move` | `functions/tasks/move.ts` |
-| GET | `/api/search` | `functions/search/search.ts` |
-| POST | `/api/export` | `functions/export/export.ts` |
-| POST | `/api/import` | `functions/import/import.ts` |
+| GET | `/api/lists` | `lists` |
+| POST | `/api/lists` | `lists` |
+| PATCH | `/api/lists/{id}` | `lists` |
+| DELETE | `/api/lists/{id}` | `lists` |
+| GET | `/api/tasks` | `tasks` |
+| POST | `/api/tasks` | `tasks` |
+| GET | `/api/tasks/{id}` | `tasks` |
+| PATCH | `/api/tasks/{id}` | `tasks` |
+| DELETE | `/api/tasks/{id}` | `tasks` |
+| POST | `/api/tasks/{id}/complete` | `tasks` |
+| POST | `/api/tasks/{id}/move` | `tasks` |
+| GET | `/api/search` | `search` |
+| POST | `/api/export` | `transfer` |
+| POST | `/api/import` | `transfer` |
 
 ### 请求与响应
 
@@ -232,7 +258,7 @@ LyCo-list/
 ### Lambda 处理示例
 
 ```ts
-// functions/lists/get.ts
+// functions/lists/index.ts
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { buildResponse, getUserId } from '@lyco/shared'
@@ -241,18 +267,52 @@ const client = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 
 export const handler = async (event: any) => {
   try {
+    const method = event.requestContext.http.method
+    const path = event.rawPath
     const userId = getUserId(event)
 
-    const result = await client.send(new QueryCommand({
-      TableName: process.env.TABLE_NAME,
-      KeyConditionExpression: 'PK = :pk',
-      ExpressionAttributeValues: { ':pk': `USER#${userId}#LISTS` }
-    }))
+    if (method === 'GET' && path === '/api/lists') {
+      const result = await client.send(new QueryCommand({
+        TableName: process.env.TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk',
+        ExpressionAttributeValues: { ':pk': `USER#${userId}#LISTS` }
+      }))
+      return buildResponse(200, result.Items)
+    }
 
-    return buildResponse(200, result.Items)
+    // ... 其他 lists 路由分发
+
+    return buildResponse(404, { error: 'Not found' })
   } catch (error) {
-    return buildResponse(500, { error: 'Failed to fetch lists' })
+    return buildResponse(500, { error: 'Failed to process request' })
   }
+}
+```
+
+## 前端 API 调用
+
+使用**原生 fetch** 封装一个 `apiClient`：
+
+- 每次请求前调用 Amplify Auth 获取最新 Access Token
+- 自动注入 `Authorization: Bearer <token>` header
+- 统一解析 JSON、处理 401/403/500 错误
+- 支持本地开发和生产环境的不同 API base URL
+
+TanStack Query 的 `queryFn` 直接使用 `apiClient('/lists')` 等。
+
+```ts
+// 示例
+const apiClient = async (path: string, options?: RequestInit) => {
+  const session = await fetchAuthSession()
+  const token = session.tokens?.accessToken?.toString()
+  return fetch(`${import.meta.env.VITE_API_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...options?.headers,
+    },
+  })
 }
 ```
 
@@ -271,23 +331,26 @@ export const handler = async (event: any) => {
 
 ## 提醒与通知
 
-MVP 保持与现有设计一致：
+### MVP
 
-- 后端通过 `/api/reminders/overdue` 接口返回当前时间之前未触发的提醒。
+保持与现有设计一致：
+- 后端提供 `/api/reminders/overdue` 接口，返回当前时间之前未触发且未禁用的提醒。
 - 前端 Service Worker 周期性轮询该接口，触发浏览器 Notification API。
 - 后端不主动推送通知。
 
-未来可考虑：
-- Amazon EventBridge Scheduler 调度提醒触发。
-- Amazon SNS 或 Amazon Pinpoint 发送邮件/短信/推送。
-- API Gateway WebSocket 实时推送至前端。
+### 未来阶段
+
+- Phase 2/3 考虑使用 **Amazon EventBridge Scheduler** 在提醒时间触发 Lambda。
+- Lambda 调用 **Amazon SNS** 或第三方服务（如微信通知）发送通知。
+- 不依赖 PWA 后台能力，通知更可靠。
 
 ## 导入与导出
 
 - 导出：Lambda 查询用户所有列表、任务、提醒，序列化为带 schema 版本字段的 JSON 对象，直接返回给前端下载。
-- 导入：Lambda 接收 JSON 文件内容，校验 schema 版本，在一个事务中替换该用户的 DynamoDB 数据。
+- 导入：Lambda 接收 JSON 文件内容，校验 schema 版本，**全量替换**该用户的 DynamoDB 数据。
 - 文件扩展名：`.lyco.json`。
-- MVP 数据量小，通过 API body 传输即可；未来如有附件再引入 S3。
+- MVP 数据量小，通过 API body 传输即可；若数据超过 Lambda 6MB 响应限制或未来有附件，再引入 S3 预签名 URL。
+- 全量替换时如项目超过 DynamoDB 事务的 100 项限制，需要分批处理。对于 2 人项目，此限制不会触发。
 
 ## 前端部署
 
@@ -307,15 +370,15 @@ MVP 保持与现有设计一致：
 | 层级 | 方式 |
 |---|---|
 | 单元测试 | Vitest，覆盖每个 Lambda handler、DynamoDB 访问函数、Zod schema |
-| 集成测试 | SST `sst bind` + local DynamoDB 或真实 AWS 测试资源 |
+| 集成测试 | Vitest + DynamoDB Local（Docker 或内存实例） |
 | 覆盖率 | 仍保持 statements、branches、functions、lines 均达到 100% |
 | API 手动测试 | Bruno 集合，需先获取 Cognito Access Token |
 
 ### 测试注意事项
 
 - Lambda handler 与 API Gateway 事件结构解耦，便于单元测试。
-- 每个 Lambda 可通过环境变量切换本地 DynamoDB 与 AWS 远端。
-- Cognito 认证在测试中通过模拟 token 或测试用户池处理。
+- 集成测试通过 DynamoDB Local 模拟真实数据库行为，避免纯 mock 的虚假安全感。
+- Cognito 认证在测试中通过模拟 token 或独立测试用户池处理。
 
 ## 部署流程
 
@@ -373,12 +436,15 @@ MVP 保持与现有设计一致：
 
 ## 风险与注意事项
 
-1. **Lambda 冷启动**：每个接口一个 Lambda，低频次接口冷启动明显；可通过预置并发或保持调用缓解。
+1. **Lambda 冷启动**：按资源域拆分后函数数量减少，但低频次访问仍可能遇到冷启动；可通过预置并发或保持调用缓解。
 2. **DynamoDB 单表复杂度**：访问模式驱动设计，需要充分理解索引和键模式。
 3. **Cognito 配置**：回调 URL、自定义域名、token 类型、授权器范围等容易出错。
-4. **Hosted UI 在 PWA 中的体验**：移动端 PWA 跳转 Hosted UI 可能跳出应用，需 Phase 2 优化。
-5. **成本**：DynamoDB 按读写收费，API Gateway 和 Lambda 按请求收费；需关注高频查询的 GSI 成本。
-6. **调试**：每个接口独立 Lambda，日志分散在 CloudWatch，需要统一日志结构和查询方式。
+4. **Hosted UI 在 PWA 中的体验**：移动端 PWA 跳转 Hosted UI 可能跳出应用，需 Phase 2 优化为自建 UI。
+5. **成本**：DynamoDB 按读写收费，API Gateway 和 Lambda 按请求收费；对于 2 人项目成本极低，但 GSI 过多会增加写放大。
+6. **调试**：Lambda 日志分散在 CloudWatch，需要统一日志结构和查询方式。
+7. **并发编辑**：MVP 采用 last-write-wins，多设备同时编辑可能丢失后写入数据。
+8. **导入大小限制**：通过 API body 导入导出受 Lambda 6MB payload 限制，未来大数据量需引入 S3。
+9. **账号删除**：MVP 不实现删除账号，Cognito 用户删除后 DynamoDB 数据仍会残留。
 
 ## 成功标准
 
