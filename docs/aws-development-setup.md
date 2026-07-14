@@ -363,11 +363,15 @@ bun dev
 # sst dev --stage dev
 ```
 
-> 在 CI、容器或没有 TTY 的终端中运行 `sst dev` 时，可能会因 tcell TUI 初始化失败而 panic。此时使用 `--mode=mono` 关闭多路复用器：
->
-> ```bash
-> bunx sst dev --mode=mono --stage dev
-> ```
+或在没有 TTY 的终端中使用：
+
+```bash
+bun run dev:mono
+# 等价于
+# sst dev --mode=mono --stage dev
+```
+
+> 在 CI、容器或没有 TTY 的终端中运行 `sst dev` 时，可能会因 tcell TUI 初始化失败而 panic。`dev:mono` 脚本使用 `--mode=mono` 关闭多路复用器。
 
 3. 观察输出，直到出现：
 

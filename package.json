@@ -8,7 +8,8 @@
     "check:fix": "bunx @biomejs/biome check --write",
     "typecheck": "tsc --build --noEmit",
     "test": "vitest run --coverage --passWithNoTests",
-    "dev": "sst dev"
+    "dev": "sst dev",
+    "dev:mono": "sst dev --mode=mono --stage dev"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

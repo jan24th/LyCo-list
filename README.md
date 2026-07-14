@@ -88,7 +88,8 @@ bun dev
 | `bun check:fix` | 使用 Biome 自动修复格式与规范问题        |
 | `bun typecheck` | 为所有包执行类型检查                     |
 | `bun run test`  | 使用 Vitest 运行所有测试并检查覆盖率     |
-| `bun dev`       | 启动 SST 本地开发环境                    |
+| `bun run dev`     | 启动 SST 本地开发环境（交互式 TUI）     |
+| `bun run dev:mono` | 启动 SST 本地开发环境（非交互式，适合无 TTY）|
 
 ## 开发规范
 
