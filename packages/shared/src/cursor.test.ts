@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { CursorError, decodeCursor, encodeCursor } from "./cursor.js";
-import { createTableInput, startDynamoDBLocal } from "./test/dynamodb-local.js";
 
 describe("encodeCursor", () => {
   it("encodes a DynamoDB key to a base64url string", () => {
@@ -47,39 +46,13 @@ describe("decodeCursor", () => {
   });
 });
 
-describe.skip("cursor with DynamoDB Local", () => {
-  it("encodes and decodes a real LastEvaluatedKey", async () => {
-    const { client, stop } = await startDynamoDBLocal();
-    const tableName = "CursorTest";
-
-    try {
-      await client.createTable(createTableInput(tableName));
-      await client.putItem({
-        TableName: tableName,
-        Item: {
-          PK: { S: "LIST#111" },
-          SK: { S: "METADATA" },
-          name: { S: "A" },
-        },
-      });
-      await client.putItem({
-        TableName: tableName,
-        Item: {
-          PK: { S: "LIST#222" },
-          SK: { S: "METADATA" },
-          name: { S: "B" },
-        },
-      });
-
-      const scan = await client.scan({ TableName: tableName, Limit: 1 });
-      const lastKey = scan.LastEvaluatedKey;
-      expect(lastKey).toBeDefined();
-
-      const cursor = encodeCursor(lastKey as Record<string, unknown>);
-      expect(decodeCursor(cursor)).toEqual(lastKey);
-    } finally {
-      await client.deleteTable({ TableName: tableName }).catch(() => null);
-      await stop();
-    }
-  }, 60_000);
+describe("cursor with DynamoDB key shape", () => {
+  it("encodes and decodes a LastEvaluatedKey-shaped object", () => {
+    const lastKey = {
+      PK: { S: "LIST#111" },
+      SK: { S: "METADATA" },
+    };
+    const cursor = encodeCursor(lastKey);
+    expect(decodeCursor(cursor)).toEqual(lastKey);
+  });
 });

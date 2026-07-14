@@ -14,8 +14,6 @@
     "test": "vitest run --coverage"
   },
   "devDependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1086.0",
-    "dynamodb-local": "^0.0.38",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
   },
