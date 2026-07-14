@@ -17,6 +17,7 @@ export default defineConfig({
         "**/*.d.ts",
         "**/*.test.ts",
         "**/vitest.config.ts",
+        "**/vitest.workspace.ts",
       ],
     },
   },
