@@ -287,6 +287,37 @@ export AWS_REGION=ap-southeast-1
       "Resource": "*"
     },
     {
+      "Sid": "AppSyncForSST",
+      "Effect": "Allow",
+      "Action": [
+        "appsync:ListApis",
+        "appsync:CreateApi",
+        "appsync:DeleteApi",
+        "appsync:GetApi",
+        "appsync:UpdateApi",
+        "appsync:CreateApiKey",
+        "appsync:DeleteApiKey",
+        "appsync:ListApiKeys",
+        "appsync:CreateDataSource",
+        "appsync:DeleteDataSource",
+        "appsync:GetDataSource",
+        "appsync:ListDataSources",
+        "appsync:UpdateDataSource",
+        "appsync:CreateResolver",
+        "appsync:DeleteResolver",
+        "appsync:ListResolvers",
+        "appsync:UpdateResolver",
+        "appsync:CreateFunction",
+        "appsync:DeleteFunction",
+        "appsync:ListFunctions",
+        "appsync:UpdateFunction",
+        "appsync:StartSchemaCreation",
+        "appsync:TagResource",
+        "appsync:UntagResource"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadOnlyForGeneral",
       "Effect": "Allow",
       "Action": [
@@ -331,6 +362,12 @@ bun dev
 # 等价于
 # sst dev --stage dev
 ```
+
+> 在 CI、容器或没有 TTY 的终端中运行 `sst dev` 时，可能会因 tcell TUI 初始化失败而 panic。此时使用 `--mode=mono` 关闭多路复用器：
+>
+> ```bash
+> bunx sst dev --mode=mono --stage dev
+> ```
 
 3. 观察输出，直到出现：
 
@@ -388,6 +425,32 @@ curl https://<api-url>/api/health
 - 重试 `bunx sst install`。
 - 若 SST telemetry 网络不稳定，可忽略 telemetry 报错，手动重试。
 
+### `sst dev` 报 `The state bucket is missing`
+
+- 原因：该 AWS 账号/区域之前做过 SST bootstrap，但 SSM 参数 `/sst/bootstrap` 引用的 S3 bucket 已被删除。
+- 修复：删除 `/sst/bootstrap` SSM 参数，让 SST 重新创建 bootstrap 资源。
+
+```bash
+export AWS_PROFILE=lyco-list-sst
+aws ssm delete-parameter --name /sst/bootstrap --region ap-southeast-1
+```
+
+然后重新运行 `sst dev`。这会重建 SST state backend（S3 bucket、DynamoDB、KMS、AppSync），不会影响 LyCo-list 应用资源。
+
+### `sst dev` 在非交互终端中 panic（tcell 相关）
+
+- 错误特征：`panic: runtime error: invalid memory address...` 且堆栈包含 `tcell` 或 `multiplexer`。
+- 修复：使用 `--mode=mono` 关闭 TUI 多路复用器：
+
+```bash
+bunx sst dev --mode=mono --stage dev
+```
+
+### 最小权限策略仍无法启动
+
+- 如果按本文档配置最小权限后仍报 `AccessDenied`，建议临时附加 `AdministratorAccess` 确认能正常启动。
+- 确认成功后，再对比实际需要的权限，逐步收紧策略。某些 SST 内部操作（如 AppSync、特定 IAM 操作）可能不在初始最小权限列表中。
+
 ## 清理开发环境
 
 如需删除 `dev` stage 创建的资源：
@@ -409,4 +472,5 @@ sst remove --stage dev
 
 | 版本 | 日期 | 说明 |
 | --- | --- | --- |
+| 1.1 | 2026-07-14 | 补充 AppSync 权限、非 TTY 模式、state bucket 缺失排查、最小权限调试建议 |
 | 1.0 | 2026-07-14 | 初始版本，覆盖 ticket 001 开发环境配置 |

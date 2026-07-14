@@ -1,5 +1,4 @@
 /// <reference types="./.sst/platform/config.d.ts" />
-
 export default $config({
   app(input) {
     return {
@@ -9,6 +8,7 @@ export default $config({
       providers: {
         aws: {
           region: "ap-southeast-1",
+          profile: process.env.AWS_PROFILE,
         },
       },
     };
