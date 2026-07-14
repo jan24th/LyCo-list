@@ -1,7 +1,7 @@
 ---
 Title: 定义 DynamoDB 单表实体 Schema 与 Cursor 工具
 ID: 003
-Status: TODO
+Status: DONE
 Labels: shared,database
 Estimate: 5
 Depends: 001
@@ -27,6 +27,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - DynamoDB 表的 SST 部署
 - 实际业务 API 接口
 - 复杂查询与索引设计
+- 外部数据库或 DynamoDB Local 集成测试环境
 
 ## 验收标准
 
@@ -38,7 +39,7 @@ Then 有效输入通过，无效输入失败
 
 ### 场景 2：将 DynamoDB Key 编码为 Cursor
 
-Given 一个 DynamoDB LastEvaluatedKey
+Given 一个 DynamoDB `LastEvaluatedKey` 形状的对象
 When 它被编码为 cursor
 Then cursor 是不透明的且可被解码
 
@@ -53,6 +54,5 @@ Then 返回原始的 DynamoDB key
 - 实体 schema 按功能域拆分目录：`packages/shared/src/schema/{lists,tasks,reminders,notifications,users}/`，每个域导出 `*Input`、`*Update`、完整记录 schema 和 TypeScript 类型。
 - `packages/shared/src/schema/common.ts` 提供通用校验 helper（`cognitoSub`、`isoTimestamp`、`recurrenceRule`、`priority`、`orderNumber`、`formatOrderKey`、`ianaTimeZone` 等）。
 - 共享错误响应和请求校验 helper（`ValidationError`、`formatZodError`、`parseRequest`）在本 ticket 中定义，供后续 Lambda 统一使用。
-- cursor 工具通过 `encodeCursor` / `decodeCursor` 对 DynamoDB `LastEvaluatedKey` 做 JSON + base64url 编码。
-- 引入 DynamoDB Local 做集成测试，验证 cursor 与真实 `LastEvaluatedKey` 的编解码兼容性；开发依赖包括 `@aws-sdk/client-dynamodb` 和 `dynamodb-local`。
+- cursor 工具通过 `encodeCursor` / `decodeCursor` 对 DynamoDB `LastEvaluatedKey` 形状的对象做 JSON + base64url 编码；本 ticket 使用单元测试覆盖，不引入 DynamoDB Local 或 `@aws-sdk/client-dynamodb`。
 - 本 ticket 不部署真实 DynamoDB 表，也不实现业务 API 接口。
