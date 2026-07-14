@@ -7,11 +7,12 @@
     "check": "bunx @biomejs/biome check",
     "check:fix": "bunx @biomejs/biome check --write",
     "typecheck": "tsc --build --noEmit",
-    "test": "vitest run --coverage",
+    "test": "vitest run --coverage --passWithNoTests",
     "dev": "sst dev"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@vitest/coverage-v8": "^3.0.0",
     "sst": "^3.7.0",
     "typescript": "^5.8.0",
     "vitest": "^3.0.0"
