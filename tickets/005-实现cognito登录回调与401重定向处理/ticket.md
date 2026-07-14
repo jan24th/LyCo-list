@@ -6,7 +6,7 @@ Labels: web,auth
 Estimate: 3
 Depends: 002,004
 PHASE: 1
-CYCLE: 1
+CYCLE: 2
 Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ---
 

@@ -6,7 +6,7 @@ Labels: api,cleanup
 Estimate: 5
 Depends: 003,008,009
 PHASE: 1
-CYCLE: 1
+CYCLE: 5
 Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ---
 

@@ -6,7 +6,7 @@ Labels: api,tasks
 Estimate: 5
 Depends: 008
 PHASE: 1
-CYCLE: 1
+CYCLE: 3
 Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ---
 

@@ -6,7 +6,7 @@ Labels: web,frontend
 Estimate: 5
 Depends: 004,015
 PHASE: 1
-CYCLE: 1
+CYCLE: 6
 Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ---
 

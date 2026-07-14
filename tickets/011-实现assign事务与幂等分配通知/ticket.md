@@ -6,7 +6,7 @@ Labels: api,tasks,notifications
 Estimate: 5
 Depends: 007,009
 PHASE: 1
-CYCLE: 1
+CYCLE: 4
 Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ---
 

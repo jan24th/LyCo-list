@@ -6,7 +6,7 @@ Labels: web,pwa
 Estimate: 3
 Depends: 012,016
 PHASE: 1
-CYCLE: 1
+CYCLE: 6
 Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ---
 
