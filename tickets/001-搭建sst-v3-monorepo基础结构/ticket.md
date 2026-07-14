@@ -1,7 +1,7 @@
 ---
 Title: 搭建 SST v3 Monorepo 基础结构
 ID: 001
-Status: Ready
+Status: Archived
 Labels: infra,monorepo
 Estimate: 5
 Depends: 
