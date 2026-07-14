@@ -11,22 +11,21 @@
 ```
 LyCo-list/
 ├── apps/
-│   ├── web/                # React PWA 前端
-│   └── api/                # Lambda 函数 + SST 配置
+│   ├── web/                # React PWA 前端（Vite + React + TS + Tailwind v4 + shadcn/ui）
+│   └── api/                # Lambda 函数
 │       ├── functions/
+│       │   ├── health/     # 占位 health Lambda（ticket 001）
 │       │   ├── lists/      # lists 域 Lambda：内部路由 GET/POST/PATCH/DELETE
 │       │   ├── tasks/      # tasks 域 Lambda：含子任务、完成、移动、assign 等
 │       │   ├── reminders/  # reminders 域 Lambda
 │       │   ├── search/     # search 域 Lambda
 │       │   ├── users/      # users 域 Lambda：返回可选 assignee 列表
 │       │   ├── notifications/ # notifications 域 Lambda：分配与提醒通知
-│       │   ├── cleanup/    # cleanup Lambda：延迟清理软删除数据
-│       │   └── health/     # health 域 Lambda
-│       └── sst.config.ts
+│       │   └── cleanup/    # cleanup Lambda：延迟清理软删除数据
 ├── packages/
-│   └── shared/             # 类型、Zod schema、DynamoDB 访问工具、响应包装
-├── sst.config.ts           # SST 根配置
-├── bruno/                  # API 测试集合（需带 Cognito token）
+│   └── shared/             # 类型、Zod schema、DynamoDB 访问工具、响应包装（ticket 001 初始化 buildResponse）
+├── sst.config.ts           # SST 根配置（ticket 001 初始化 ApiGatewayV2 + StaticSite）
+├── bruno/                  # API 测试集合（ticket 001 初始化 health 请求，后续带 Cognito token）
 └── ...
 ```
 
@@ -170,6 +169,7 @@ cleanup Lambda ───────────────► DynamoDB
 - 开发阶段使用 `bunx @biomejs/biome check` 做代码检查；CI 阶段使用 `bunx @biomejs/biome ci`。
 - 类型检查优先使用 `tsgo`；若 `tsgo` 尚未兼容项目则回退到 `tsc --noEmit`。
 - 前后端共享 `packages/shared` 的类型与校验 schema。
+- 前端样式使用 Tailwind CSS v4（CSS-first 配置），组件库使用 shadcn/ui，ticket 001 完成初始化。
 
 ### 项目管理流程
 
@@ -627,9 +627,9 @@ const apiClient = async (path: string, options?: RequestInit) => {
 ## Bruno API 集合
 
 - 在仓库根目录 `bruno/` 下以 `.bru` 文件形式存储 API 请求。
-- 集合包含 `development` 和 `production` 两种环境。
-- 每个接口对应一个请求，包含 create/update/assign 的示例请求体。
-- 由于接口需要 Cognito JWT 授权，集合中需先执行登录步骤，将 Access Token 保存到集合变量中，后续请求自动注入 `Authorization: Bearer <token>`。
+- ticket 001 初始化 Bruno 集合，包含 `development` 和 `production` 环境，以及 `GET /api/health` 占位请求。
+- 后续 ticket 逐步补充每个接口的对应请求，包含 create/update/assign 的示例请求体。
+- 由于业务接口需要 Cognito JWT 授权，集合中需先执行登录步骤，将 Access Token 保存到集合变量中，后续请求自动注入 `Authorization: Bearer <token>`。
 - Bruno 用于开发阶段手动 API 测试，以及团队内共享 API 示例。
 
 ## 前端 UI 结构
@@ -651,7 +651,8 @@ const apiClient = async (path: string, options?: RequestInit) => {
 2. 构建产物上传到 S3。
 3. CloudFront 作为 CDN 和 HTTPS 入口，绑定 `app.example.com`。
 4. 前端环境变量通过 SST `StaticSite` 的 `environment` 配置在构建时注入。
-5. Vite 通过 `import.meta.env` 读取 `VITE_API_URL`、`VITE_USER_POOL_ID`、`VITE_USER_POOL_CLIENT_ID` 等变量。
+5. `VITE_API_URL` 直接引用 `api.url`；`VITE_USER_POOL_ID` 和 `VITE_USER_POOL_CLIENT_ID` 在 ticket 001 中使用 `sst.Config.String` 占位（默认值 `todo-in-ticket-002`），ticket 002 部署 Cognito 后替换为真实 ID。
+6. Vite 通过 `import.meta.env` 读取 `VITE_API_URL`、`VITE_USER_POOL_ID`、`VITE_USER_POOL_CLIENT_ID` 等变量。
 
 ### 本地开发
 
@@ -711,6 +712,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 ### 测试注意事项
 
+- 100% 覆盖率从 ticket 001（脚手架阶段）开始生效，占位代码（如 `buildResponse` 和 health handler）也需要编写测试并满足阈值。
 - Lambda handler 与 API Gateway 事件结构解耦，便于单元测试。
 - 集成测试通过 DynamoDB Local 模拟真实数据库行为，避免纯 mock 的虚假安全感。
 - Cognito 认证在测试中通过模拟 token 或独立测试用户池处理。
@@ -726,7 +728,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 ### Phase 1：Serverless MVP
 
-1. 搭建 SST v3 项目结构，配置 `sst.aws.StaticSite`、`sst.aws.ApiGatewayV2` 和 Node.js 24 Lambda。
+1. 搭建 SST v3 项目结构：根目录 `sst.config.ts` 配置 `sst.aws.ApiGatewayV2`（含 `GET /api/health`）和 `sst.aws.StaticSite`；`apps/web` 初始化为 Vite + React + TypeScript + Tailwind CSS v4 + shadcn/ui；`apps/api` 添加占位 health Lambda；`packages/shared` 初始化 `buildResponse`；`bruno/` 初始化 health 请求；CI 工作流配置 Biome、类型检查、测试与 100% 覆盖率。
 2. 配置 Cognito User Pool、User Pool Client、Hosted UI 自定义域名，关闭公开注册。
 3. 定义可按实体 ID 直接读取的 DynamoDB 单表、1 个 GSI、TTL 和乐观版本字段。
 4. 前端脚手架：React + Vite + TypeScript + Tailwind + shadcn/ui + TanStack Router/Query/Store/Form + Vitest。
