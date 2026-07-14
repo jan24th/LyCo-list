@@ -1,11 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { routeTree } from "@/routeTree.gen";
 import {
+  RouterProvider,
   createMemoryHistory,
   createRouter,
-  RouterProvider,
 } from "@tanstack/react-router";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { routeTree } from "@/routeTree.gen";
 
 window.scrollTo = vi.fn();
 

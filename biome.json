@@ -30,7 +30,8 @@
       ".sst",
       "coverage",
       "bun.lock",
-      "sst-env.d.ts"
+      "sst-env.d.ts",
+      "**/routeTree.gen.ts"
     ]
   }
 }

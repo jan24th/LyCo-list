@@ -15,6 +15,12 @@ describe("Button", () => {
     expect(button).toHaveClass("hover:bg-slate-100");
   });
 
+  it("renders small size", () => {
+    render(<Button size="sm">Small</Button>);
+    const button = screen.getByRole("button", { name: "Small" });
+    expect(button).toHaveClass("h-8");
+  });
+
   it("calls onClick when clicked", async () => {
     const handleClick = vi.fn();
     render(<Button onClick={handleClick}>Click</Button>);

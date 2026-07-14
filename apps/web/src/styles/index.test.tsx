@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
 function StyledBox() {
   return <div className="bg-slate-50 text-slate-900 p-4">Styled</div>;
