@@ -40,4 +40,4 @@ jobs:
         with:
           bun-version: latest
       - run: bun install --registry https://registry.npmmirror.com
-      - run: bun test
+      - run: bun run test
