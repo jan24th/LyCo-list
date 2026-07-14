@@ -9,7 +9,11 @@
     "forceConsistentCasingInFileNames": true,
     "composite": true
   },
-  "references": [{ "path": "./apps/api" }, { "path": "./packages/shared" }],
+  "references": [
+    { "path": "./apps/api" },
+    { "path": "./apps/web" },
+    { "path": "./packages/shared" }
+  ],
   "include": [],
   "exclude": ["node_modules", "dist", ".sst", "coverage"]
 }

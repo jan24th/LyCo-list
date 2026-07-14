@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildResponse, errorResponse } from "./index";
+import { buildResponse, errorResponse } from "./index.js";
 
 describe("buildResponse", () => {
   it("returns a JSON API response with the given status code", () => {
