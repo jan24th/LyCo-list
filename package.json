@@ -1,0 +1,22 @@
+{
+  "name": "lyco-list",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "check": "bunx @biomejs/biome check",
+    "check:fix": "bunx @biomejs/biome check --write",
+    "typecheck": "tsc --build --noEmit",
+    "test": "vitest run --coverage --passWithNoTests",
+    "dev": "sst dev",
+    "dev:mono": "sst dev --mode=mono --stage dev"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^3.0.0",
+    "sst": "^3.7.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}

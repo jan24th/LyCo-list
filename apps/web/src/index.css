@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-lyco-bg: #f8fafc;
+  --color-lyco-text: #0f172a;
+}
+
+body {
+  background-color: var(--color-lyco-bg);
+  color: var(--color-lyco-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+}

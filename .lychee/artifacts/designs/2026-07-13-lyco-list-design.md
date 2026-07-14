@@ -170,6 +170,9 @@ cleanup Lambda ───────────────► DynamoDB
 - 类型检查优先使用 `tsgo`；若 `tsgo` 尚未兼容项目则回退到 `tsc --noEmit`。
 - 前后端共享 `packages/shared` 的类型与校验 schema。
 - 前端样式使用 Tailwind CSS v4（CSS-first 配置），组件库使用 shadcn/ui，ticket 001 完成初始化。
+- **Vitest 配置**：根目录 `vitest.config.ts` 使用 `test.projects` 聚合 `apps/*/vitest.config.ts` 与 `packages/*/vitest.config.ts`，不再使用已弃用的 `vitest.workspace.ts`。子包 `vitest.config.ts` 独立配置，根配置统一设置 `coverage.all: false` 并排除 `.sst/`、`node_modules/`、配置文件等，防止 SST 平台文件污染覆盖率报告。
+- **测试命令**：本地与 CI 统一使用 `bun run test` 执行 Vitest（即 `vitest run --coverage --passWithNoTests`），直接使用 `bun test` 会启动 Bun 原生测试运行器，不加载 `jsdom` 且无法读取 `vitest.config.ts`。
+- **CI 工具链**：`oven-sh/setup-bun` 固定为 `v2.2.0`（Node 24 runtime），避免 GitHub Actions 的 Node 20 弃用警告。
 
 ### 项目管理流程
 
@@ -651,7 +654,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 2. 构建产物上传到 S3。
 3. CloudFront 作为 CDN 和 HTTPS 入口，绑定 `app.example.com`。
 4. 前端环境变量通过 SST `StaticSite` 的 `environment` 配置在构建时注入。
-5. `VITE_API_URL` 直接引用 `api.url`；`VITE_USER_POOL_ID` 和 `VITE_USER_POOL_CLIENT_ID` 在 ticket 001 中使用 `sst.Config.String` 占位（默认值 `todo-in-ticket-002`），ticket 002 部署 Cognito 后替换为真实 ID。
+5. `VITE_API_URL` 直接引用 `api.url`；`VITE_USER_POOL_ID` 和 `VITE_USER_POOL_CLIENT_ID` 在 ticket 001 中使用 `sst.Secret` 占位（placeholder 值 `todo-in-ticket-002`），ticket 002 部署 Cognito 后替换为真实 ID。
 6. Vite 通过 `import.meta.env` 读取 `VITE_API_URL`、`VITE_USER_POOL_ID`、`VITE_USER_POOL_CLIENT_ID` 等变量。
 
 ### 本地开发
@@ -665,11 +668,13 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 1. 开发者提交代码。
 2. CI 运行 `bunx @biomejs/biome ci`。
-3. CI 运行 `bun test`（Vitest）。
+3. CI 运行 `bun run test`（Vitest）。
 4. CI 运行 `tsc --noEmit` 或 `tsgo` 类型检查。
 5. 生产部署 **手动触发** `sst deploy --stage prod`。
 6. SST 创建/更新：CloudFront、S3、API Gateway、Lambda、DynamoDB、Cognito，以及基于 EventBridge Scheduler 的 `sst.aws.CronV2`。
 7. 使用 SST stage `dev` 和 `prod`，不使用 `test` stage。
+
+**CI 工具版本**：GitHub Actions 使用 `oven-sh/setup-bun@v2.2.0`（Node 24 runtime），替代浮动的 `v2` 标签，以避免 Node 20 弃用警告。
 
 ## 部署与运维
 
