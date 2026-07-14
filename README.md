@@ -57,6 +57,8 @@ LyCo-list/
 - AWS 凭证（用于 `sst dev` / `sst deploy`）
 - 可选：`tsgo`（类型检查加速）
 
+详细 AWS 开发环境配置见 [docs/aws-development-setup.md](./docs/aws-development-setup.md)。
+
 安装依赖：
 
 ```bash
