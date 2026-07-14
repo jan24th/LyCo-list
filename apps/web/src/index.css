@@ -3,6 +3,8 @@
 @theme {
   --color-lyco-bg: #f8fafc;
   --color-lyco-text: #0f172a;
+  --color-lyco-primary: #3b82f6;
+  --color-lyco-primary-foreground: #ffffff;
 }
 
 body {
