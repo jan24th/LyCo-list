@@ -185,7 +185,8 @@ git commit -m "chore(repo): initialize bun workspace with sst, biome, vitest"
       "dist",
       ".sst",
       "coverage",
-      "bun.lock"
+      "bun.lock",
+      "sst-env.d.ts"
     ]
   }
 }

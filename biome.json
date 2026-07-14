@@ -24,6 +24,13 @@
     }
   },
   "files": {
-    "ignore": ["node_modules", "dist", ".sst", "coverage", "bun.lock"]
+    "ignore": [
+      "node_modules",
+      "dist",
+      ".sst",
+      "coverage",
+      "bun.lock",
+      "sst-env.d.ts"
+    ]
   }
 }
