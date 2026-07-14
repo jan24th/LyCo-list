@@ -7,3 +7,5 @@ export * from "./schema/common.js";
 export * from "./schema/users/index.js";
 export * from "./schema/lists/index.js";
 export * from "./schema/tasks/index.js";
+export * from "./schema/reminders/index.js";
+export * from "./schema/notifications/index.js";
