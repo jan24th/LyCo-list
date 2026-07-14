@@ -7,9 +7,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "composite": true
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist",
+    "rootDir": ".",
+    "types": ["node"]
   },
-  "references": [{ "path": "./apps/api" }, { "path": "./packages/shared" }],
-  "include": [],
-  "exclude": ["node_modules", "dist", ".sst", "coverage"]
+  "include": ["src/**/*", "vitest.config.ts"]
 }
