@@ -10,3 +10,5 @@ export * from "./schema/tasks/index.js";
 export * from "./schema/reminders/index.js";
 export * from "./schema/notifications/index.js";
 export * from "./cursor.js";
+export * from "./errors.js";
+export * from "./validate.js";
