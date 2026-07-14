@@ -7,24 +7,35 @@ Estimate: 1
 Depends: 001
 PHASE: 1
 CYCLE: 1
-Source: 2026-07-13-lyco-list-design.md
+Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ---
 
 # 实现 Health 接口
 
-## User Story
+## 用户故事
 
 作为运维人员，我希望拥有一个健康检查端点，以便确认 API 是否正常运行。
 
-## Acceptance Criteria
+## 范围
 
-### Scenario 1: Health 端点返回 OK
+### 包含
+- 实现 GET /health 端点
+- 返回 API 健康状态与 200 响应
+- 端点无需认证即可访问
+
+### 不包含
+- 依赖服务（如 DynamoDB、Cognito）的详细健康检查
+- 性能指标、监控告警或日志聚合
+
+## 验收标准
+
+### 场景 1：Health 端点返回 OK
 
 Given API 正在运行
 When 我调用 GET /health
 Then 返回 200 和健康状态
 
-### Scenario 2: Health 端点公开可访问
+### 场景 2：Health 端点公开可访问
 
 Given API 正在运行
 When 我在未认证的情况下调用 GET /health
