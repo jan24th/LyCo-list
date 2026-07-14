@@ -2,10 +2,7 @@
   "name": "lyco-list",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "check": "bunx @biomejs/biome check",
     "check:fix": "bunx @biomejs/biome check --write",
