@@ -4,9 +4,9 @@
 > Plan: `tickets/003-定义dynamodb单表实体schema与cursor工具/plan.md`
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `subagent-driven-development` (recommended) or `executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在 `packages/shared` 中按功能域拆分并定义 LyCo-list 所有 DynamoDB 实体共享的 Zod schema，以及用于分页的不透明 cursor 编解码工具。通过 DynamoDB Local 验证 cursor 与真实 `LastEvaluatedKey` 的兼容性，并满足 100% 测试覆盖率。
+**Goal:** 在 `packages/shared` 中按功能域拆分并定义 LyCo-list 所有 DynamoDB 实体共享的 Zod schema，以及用于分页的不透明 cursor 编解码工具。使用单元测试覆盖 cursor 对 DynamoDB `LastEvaluatedKey` 形状的兼容性，并满足 100% 测试覆盖率。
 
-**Architecture:** 按 `schema/lists/`、`schema/tasks/`、`schema/reminders/`、`schema/notifications/`、`schema/users/` 组织 schema，每个域导出输入、更新和完整记录 schema。`schema/common.ts` 提供通用校验 helper。cursor 工具对 DynamoDB `LastEvaluatedKey` 做 JSON + base64url 编码，并通过 DynamoDB Local 集成测试验证。所有导出通过 `@lyco/shared` 暴露。
+**Architecture:** 按 `schema/lists/`、`schema/tasks/`、`schema/reminders/`、`schema/notifications/`、`schema/users/` 组织 schema，每个域导出输入、更新和完整记录 schema。`schema/common.ts` 提供通用校验 helper。cursor 工具对 DynamoDB `LastEvaluatedKey` 形状的对象做 JSON + base64url 编码，并通过单元测试验证。所有导出通过 `@lyco/shared` 暴露。
 
 ## Global Constraints
 
@@ -29,27 +29,23 @@
 
 ### Task 1: 添加依赖并初始化 Schema 目录结构
 
-> Covers: 所有实体验证与 cursor 集成测试的基础依赖
+> Covers: 所有实体验证与 cursor 单元测试的基础依赖
 
 **Files:**
 - Create: `packages/shared/src/schema/common.ts`
 - Create: `packages/shared/src/schema/common.test.ts`
-- Create: `packages/shared/src/test/dynamodb-local.ts`
-- Create: `packages/shared/src/test/dynamodb-local.test.ts`
 - Modify: `packages/shared/package.json`
 - Modify: `packages/shared/src/index.ts`
 
 **Interfaces:**
 - Consumes: workspace 基础结构（由 ticket 001 建立）。
-- Produces: `zod`、DynamoDB Local 测试辅助；导出自定义校验 helper。
+- Produces: `zod`；导出自定义校验 helper。
 
 - [ ] **Step 1: 安装依赖**
 
 Run: `cd packages/shared && bun add zod --registry https://registry.npmmirror.com`
 
-Run: `cd packages/shared && bun add -d @aws-sdk/client-dynamodb dynamodb-local --registry https://registry.npmmirror.com`
-
-Expected: `package.json` 中新增 `zod` 依赖和 `@aws-sdk/client-dynamodb`、`dynamodb-local` devDependencies。
+Expected: `package.json` 中新增 `zod` 依赖。
 
 - [ ] **Step 2: 创建 `packages/shared/src/schema/common.ts`**
 
@@ -146,84 +142,18 @@ describe("common helpers", () => {
 });
 ```
 
-- [ ] **Step 4: 创建 `packages/shared/src/test/dynamodb-local.ts`**
+- [ ] **Step 4: 运行测试**
 
-```typescript
-import { DynamoDB } from "@aws-sdk/client-dynamodb";
-import dynamodbLocal from "dynamodb-local";
-
-const port = 8000;
-
-export async function startDynamoDBLocal(): Promise<{
-  client: DynamoDB;
-  stop: () => Promise<void>;
-}> {
-  await dynamodbLocal.launch(port, null, ["-sharedDb"]);
-  const client = new DynamoDB({
-    endpoint: `http://localhost:${port}`,
-    region: "local",
-    credentials: { accessKeyId: "local", secretAccessKey: "local" },
-  });
-
-  return {
-    client,
-    stop: async () => {
-      await dynamodbLocal.stop(port);
-    },
-  };
-}
-
-export function createTableInput(tableName: string): {
-  TableName: string;
-  KeySchema: Array<{ AttributeName: string; KeyType: string }>;
-  AttributeDefinitions: Array<{ AttributeName: string; AttributeType: string }>;
-  BillingMode: string;
-} {
-  return {
-    TableName: tableName,
-    KeySchema: [
-      { AttributeName: "PK", KeyType: "HASH" },
-      { AttributeName: "SK", KeyType: "RANGE" },
-    ],
-    AttributeDefinitions: [
-      { AttributeName: "PK", AttributeType: "S" },
-      { AttributeName: "SK", AttributeType: "S" },
-    ],
-    BillingMode: "PAY_PER_REQUEST",
-  };
-}
-```
-
-- [ ] **Step 5: 创建 `packages/shared/src/test/dynamodb-local.test.ts`**
-
-```typescript
-import { describe, expect, it } from "vitest";
-import { createTableInput, startDynamoDBLocal } from "./dynamodb-local";
-
-describe("startDynamoDBLocal", () => {
-  it("starts a local instance and creates a table", async () => {
-    const { client, stop } = await startDynamoDBLocal();
-    await client.createTable(createTableInput("TestTable"));
-    const tables = await client.listTables({});
-    expect(tables.TableNames).toContain("TestTable");
-    await client.deleteTable({ TableName: "TestTable" });
-    await stop();
-  });
-});
-```
-
-- [ ] **Step 6: 运行测试**
-
-Run: `cd packages/shared && bun test src/schema/common.test.ts src/test/dynamodb-local.test.ts`
+Run: `cd packages/shared && bun test src/schema/common.test.ts`
 
 Expected: PASS，覆盖率 100%。
 
-- [ ] **Step 7: 提交**
+- [ ] **Step 5: 提交**
 
 ```bash
 git add packages/shared
 
-git commit -m "feat(shared): add common zod helpers and dynamodb local test harness"
+git commit -m "feat(shared): add common zod helpers"
 ```
 
 ---
@@ -869,14 +799,15 @@ export function decodeCursor(cursor: string): CursorKey {
 ```typescript
 import { describe, expect, it } from "vitest";
 import { CursorError, decodeCursor, encodeCursor } from "./cursor";
-import { createTableInput, startDynamoDBLocal } from "./test/dynamodb-local";
 
 describe("encodeCursor", () => {
   it("encodes a DynamoDB key to a base64url string", () => {
     const key = { PK: "LIST#111", SK: "METADATA" };
     const cursor = encodeCursor(key);
     expect(typeof cursor).toBe("string");
-    expect(Buffer.from(cursor, "base64url").toString("utf-8")).toBe(JSON.stringify(key));
+    expect(Buffer.from(cursor, "base64url").toString("utf-8")).toBe(
+      JSON.stringify(key),
+    );
   });
 
   it("throws on empty key", () => {
@@ -884,7 +815,12 @@ describe("encodeCursor", () => {
   });
 
   it("round-trips complex keys", () => {
-    const key = { PK: "TASK#abc", SK: "METADATA", GSI1PK: "TASKS", GSI1SK: "ORDER#1" };
+    const key = {
+      PK: "TASK#abc",
+      SK: "METADATA",
+      GSI1PK: "TASKS",
+      GSI1SK: "ORDER#1",
+    };
     expect(decodeCursor(encodeCursor(key))).toEqual(key);
   });
 });
@@ -909,32 +845,14 @@ describe("decodeCursor", () => {
   });
 });
 
-describe("cursor with DynamoDB Local", () => {
-  it("encodes and decodes a real LastEvaluatedKey", async () => {
-    const { client, stop } = await startDynamoDBLocal();
-    const tableName = "CursorTest";
-
-    try {
-      await client.createTable(createTableInput(tableName));
-      await client.putItem({
-        TableName: tableName,
-        Item: { PK: { S: "LIST#111" }, SK: { S: "METADATA" }, name: { S: "A" } },
-      });
-      await client.putItem({
-        TableName: tableName,
-        Item: { PK: { S: "LIST#222" }, SK: { S: "METADATA" }, name: { S: "B" } },
-      });
-
-      const scan = await client.scan({ TableName: tableName, Limit: 1 });
-      const lastKey = scan.LastEvaluatedKey;
-      expect(lastKey).toBeDefined();
-
-      const cursor = encodeCursor(lastKey as Record<string, unknown>);
-      expect(decodeCursor(cursor)).toEqual(lastKey);
-    } finally {
-      await client.deleteTable({ TableName: tableName }).catch(() => null);
-      await stop();
-    }
+describe("cursor with DynamoDB key shape", () => {
+  it("encodes and decodes a LastEvaluatedKey-shaped object", () => {
+    const lastKey = {
+      PK: { S: "LIST#111" },
+      SK: { S: "METADATA" },
+    };
+    const cursor = encodeCursor(lastKey);
+    expect(decodeCursor(cursor)).toEqual(lastKey);
   });
 });
 ```
@@ -1171,7 +1089,7 @@ git commit -m "chore(shared): finalize shared schema exports and index"
 
 ### 4. Plan reliability
 
-所有任务依赖顺序合理：Task 1（通用 helper + DynamoDB Local）→ Task 2（List/User）→ Task 3（Task）→ Task 4（Reminder/Notification）→ Task 5（Cursor）→ Task 6（Errors/Validate）→ Task 7（最终验证）。每个 schema 文件相互独立，仅共享 `common` helper。cursor 工具通过 DynamoDB Local 集成测试验证真实 `LastEvaluatedKey` 格式，避免纯 mock 导致的虚假安全感。DynamoDB Local 启动失败时会调整端口或使用 Docker，计划已备注。
+所有任务依赖顺序合理：Task 1（通用 helper）→ Task 2（List/User）→ Task 3（Task）→ Task 4（Reminder/Notification）→ Task 5（Cursor）→ Task 6（Errors/Validate）→ Task 7（最终验证）。每个 schema 文件相互独立，仅共享 `common` helper。cursor 工具通过单元测试覆盖 DynamoDB `LastEvaluatedKey` 形状的对象，验证 JSON + base64url 编解码的正确性。本 ticket 不引入外部数据库或 DynamoDB Local 运行实例。
 
 ---
 

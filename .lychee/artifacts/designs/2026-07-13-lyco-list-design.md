@@ -710,14 +710,15 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 | 层级         | 方式                                               |
 | ------------ | -------------------------------------------------- |
-| 单元测试     | Vitest，覆盖 Lambda handler 逻辑、Zod schema       |
-| 集成测试     | Vitest + DynamoDB Local（Docker 或内存实例）       |
+| 单元测试     | Vitest，覆盖 Lambda handler 逻辑、Zod schema、共享 cursor 工具 |
+| 集成测试     | Vitest + DynamoDB Local（Docker 或内存实例），用于 API 与数据库交互测试 |
 | 覆盖率       | statements、branches、functions、lines 均达到 100% |
 | API 手动测试 | Bruno 集合，需先获取 Cognito Access Token          |
 
 ### 测试注意事项
 
 - 100% 覆盖率从 ticket 001（脚手架阶段）开始生效，占位代码（如 `buildResponse` 和 health handler）也需要编写测试并满足阈值。
+- 共享包中的 Zod schema、cursor 工具等纯数据结构使用单元测试覆盖；DynamoDB Local 在后续 API ticket 的集成测试中引入。
 - Lambda handler 与 API Gateway 事件结构解耦，便于单元测试。
 - 集成测试通过 DynamoDB Local 模拟真实数据库行为，避免纯 mock 的虚假安全感。
 - Cognito 认证在测试中通过模拟 token 或独立测试用户池处理。
