@@ -170,6 +170,9 @@ cleanup Lambda ───────────────► DynamoDB
 - 类型检查优先使用 `tsgo`；若 `tsgo` 尚未兼容项目则回退到 `tsc --noEmit`。
 - 前后端共享 `packages/shared` 的类型与校验 schema。
 - 前端样式使用 Tailwind CSS v4（CSS-first 配置），组件库使用 shadcn/ui，ticket 001 完成初始化。
+- **Vitest 配置**：根目录 `vitest.config.ts` 使用 `test.projects` 聚合 `apps/*/vitest.config.ts` 与 `packages/*/vitest.config.ts`，不再使用已弃用的 `vitest.workspace.ts`。子包 `vitest.config.ts` 独立配置，根配置统一设置 `coverage.all: false` 并排除 `.sst/`、`node_modules/`、配置文件等，防止 SST 平台文件污染覆盖率报告。
+- **测试命令**：本地与 CI 统一使用 `bun run test` 执行 Vitest（即 `vitest run --coverage --passWithNoTests`），直接使用 `bun test` 会启动 Bun 原生测试运行器，不加载 `jsdom` 且无法读取 `vitest.config.ts`。
+- **CI 工具链**：`oven-sh/setup-bun` 固定为 `v2.2.0`（Node 24 runtime），避免 GitHub Actions 的 Node 20 弃用警告。
 
 ### 项目管理流程
 
@@ -665,11 +668,13 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 1. 开发者提交代码。
 2. CI 运行 `bunx @biomejs/biome ci`。
-3. CI 运行 `bun test`（Vitest）。
+3. CI 运行 `bun run test`（Vitest）。
 4. CI 运行 `tsc --noEmit` 或 `tsgo` 类型检查。
 5. 生产部署 **手动触发** `sst deploy --stage prod`。
 6. SST 创建/更新：CloudFront、S3、API Gateway、Lambda、DynamoDB、Cognito，以及基于 EventBridge Scheduler 的 `sst.aws.CronV2`。
 7. 使用 SST stage `dev` 和 `prod`，不使用 `test` stage。
+
+**CI 工具版本**：GitHub Actions 使用 `oven-sh/setup-bun@v2.2.0`（Node 24 runtime），替代浮动的 `v2` 标签，以避免 Node 20 弃用警告。
 
 ## 部署与运维
 

@@ -91,3 +91,11 @@ Then 请求文件包含正确的 `GET /api/health` 配置
 - 根目录添加 `tsconfig.json` 使用 TypeScript project references；各子包补充 `composite` / `declaration` 配置以支持 `tsc --build --noEmit`。
 - `packages/shared` 在 `buildResponse` 之外增加 `errorResponse(message, code?)` helper，供后续业务接口统一返回错误体。
 - 本 ticket 不创建 `.env.example`（环境变量由 SST 注入，无需本地手动配置）。
+- **Vitest workspace 实现调整**：计划原稿使用 `vitest.workspace.ts` 与根 `vitest.config.ts` fallback；实际实现改用 `vitest.config.ts` 中的 `test.projects` 字段聚合 `apps/*/vitest.config.ts` 与 `packages/*/vitest.config.ts`。原因：Vitest 3.2 已弃用 workspace 文件，且空 workspace 会报错。子包 `vitest.config.ts` 独立配置，不再导入根配置（避免 TypeScript `rootDir` 越界检查）。
+- **测试命令区分**：`bun test` 会启动 Bun 原生测试运行器，不加载 `jsdom` 且无法识别 `vitest.config.ts`。CI 与文档统一使用 `bun run test` 执行 `vitest run --coverage --passWithNoTests`。
+- **覆盖率配置调整**：根 `vitest.config.ts` 设置 `coverage.all: false` 并排除 `.sst/**`、`node_modules/**`、`*vite.config.ts`、`*sst.config.ts`、`*test-setup.ts` 等，防止 SST 平台文件和配置文件污染覆盖率报告。
+- **前端测试依赖**：`apps/web` 额外引入 `@testing-library/jest-dom` 与 `src/test-setup.ts`，以支持 `toBeInTheDocument` 等 DOM matcher；未在原计划列出。
+- **TypeScript 模块解析调整**：`apps/api` 的 `tsconfig.json` 从计划的 `NodeNext` 改为 `ESNext + bundler`，避免 NodeNext 下相对导入必须带 `.js` 扩展以及 `vitest.config.ts` 越界引用根配置的问题；`packages/shared` 保持 `NodeNext` 并在相对导入中显式使用 `.js` 扩展（`./response.js`、`./index.js`）。
+- **CI 工具版本**：`oven-sh/setup-bun` 固定为 `v2.2.0`（非浮动的 `v2`），因为 v2.2.0 将 action runtime 升级到 Node 24，避免 GitHub Actions 的 Node 20 弃用警告。
+- **根依赖补充**：新增 `@types/node` 作为根 devDependency，满足 `apps/api` 的 `types: ["node"]` 和 `tsc --build` 需要。
+- **Git 忽略补充**：`.gitignore` 增加 `*.tsbuildinfo`，避免 TypeScript 构建信息文件被提交。
