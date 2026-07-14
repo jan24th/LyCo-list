@@ -1,7 +1,7 @@
 ---
 Title: 定义 DynamoDB 单表实体 Schema 与 Cursor 工具
 ID: 003
-Status: DONE
+Status: ARCHIVED
 Labels: shared,database
 Estimate: 5
 Depends: 001
@@ -56,3 +56,10 @@ Then 返回原始的 DynamoDB key
 - 共享错误响应和请求校验 helper（`ValidationError`、`formatZodError`、`parseRequest`）在本 ticket 中定义，供后续 Lambda 统一使用。
 - cursor 工具通过 `encodeCursor` / `decodeCursor` 对 DynamoDB `LastEvaluatedKey` 形状的对象做 JSON + base64url 编码；本 ticket 使用单元测试覆盖，不引入 DynamoDB Local 或 `@aws-sdk/client-dynamodb`。
 - 本 ticket 不部署真实 DynamoDB 表，也不实现业务 API 接口。
+
+## 归档记录
+
+- 合并时间：2026-07-14
+- 合并分支：`feat/003-shared-schemas` → `main`
+- 状态：已完成并归档
+- 备注：cursor 工具采用单元测试覆盖，未引入 DynamoDB Local。
