@@ -47,3 +47,12 @@ Then cursor 是不透明的且可被解码
 Given 一个 cursor 字符串
 When 它被解码
 Then 返回原始的 DynamoDB key
+
+## 计划实施备注
+
+- 实体 schema 按功能域拆分目录：`packages/shared/src/schema/{lists,tasks,reminders,notifications,users}/`，每个域导出 `*Input`、`*Update`、完整记录 schema 和 TypeScript 类型。
+- `packages/shared/src/schema/common.ts` 提供通用校验 helper（`cognitoSub`、`isoTimestamp`、`recurrenceRule`、`priority`、`orderNumber`、`formatOrderKey`、`ianaTimeZone` 等）。
+- 共享错误响应和请求校验 helper（`ValidationError`、`formatZodError`、`parseRequest`）在本 ticket 中定义，供后续 Lambda 统一使用。
+- cursor 工具通过 `encodeCursor` / `decodeCursor` 对 DynamoDB `LastEvaluatedKey` 做 JSON + base64url 编码。
+- 引入 DynamoDB Local 做集成测试，验证 cursor 与真实 `LastEvaluatedKey` 的编解码兼容性；开发依赖包括 `@aws-sdk/client-dynamodb` 和 `dynamodb-local`。
+- 本 ticket 不部署真实 DynamoDB 表，也不实现业务 API 接口。
