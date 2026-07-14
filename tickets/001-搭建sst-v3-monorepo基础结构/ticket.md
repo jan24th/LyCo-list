@@ -80,3 +80,14 @@ Then 请求文件包含正确的 `GET /api/health` 配置
 - Cognito User Pool / Hosted UI / 关闭公开注册 → ticket 002
 - DynamoDB 单表、实体 schema、cursor 工具 → ticket 003
 - React PWA 骨架（Router/Query/Store/Form）→ ticket 004
+
+## 计划实施备注
+
+- 设计文档要求 Lambda 使用 Node.js 24 runtime，但当前 SST v3 与 AWS 区域对 `nodejs24.x` 支持可能不完全；计划保守使用 `nodejs22.x` 占位，待支持成熟后在 ticket 002/003 中统一升级。
+- `sst dev` 完整验证（Scenario 4）需要有效的 AWS 凭证与 `ap-southeast-1` 访问权限；无凭证时无法本地调用 `/api/health` 或部署 StaticSite，但代码结构与配置保持完整可部署。
+- `apps/api` 的占位 health Lambda 目录结构为 `src/health/index.ts`（与历史决策一致，便于后续按域扩展为 `src/<domain>/index.ts`）。
+- health handler 引入 `@types/aws-lambda` 并显式标注 `APIGatewayProxyHandlerV2` 类型，不引入 `aws-lambda` 运行时包。
+- Bruno 集合根文件使用 `collection.bru`。
+- 根目录添加 `tsconfig.json` 使用 TypeScript project references；各子包补充 `composite` / `declaration` 配置以支持 `tsc --build --noEmit`。
+- `packages/shared` 在 `buildResponse` 之外增加 `errorResponse(message, code?)` helper，供后续业务接口统一返回错误体。
+- 本 ticket 不创建 `.env.example`（环境变量由 SST 注入，无需本地手动配置）。
