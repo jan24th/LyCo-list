@@ -7,7 +7,7 @@ Estimate: 5
 Depends: 001
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 定义 DynamoDB 单表实体 Schema 与 Cursor 工具

@@ -7,7 +7,7 @@ Estimate: 3
 Depends: 004
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 配置 PWA Manifest、Service Worker 和安装提示

@@ -7,7 +7,7 @@ Estimate: 5
 Depends: 003,008,009
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 实现 DELETION_JOB 和 Cleanup Lambda

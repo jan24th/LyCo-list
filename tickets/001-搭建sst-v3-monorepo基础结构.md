@@ -7,7 +7,7 @@ Estimate: 5
 Depends: 
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 Plan: .lychee/artifacts/plans/001-搭建sst-v3-monorepo基础结构.md
 ---
 

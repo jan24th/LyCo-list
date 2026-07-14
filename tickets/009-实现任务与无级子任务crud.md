@@ -7,7 +7,7 @@ Estimate: 5
 Depends: 008
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 实现任务与无级子任务 CRUD

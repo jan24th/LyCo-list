@@ -7,7 +7,7 @@ Estimate: 3
 Depends: 006,007,008,009,010,011,012,013,015,018
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 更新 Bruno 集合覆盖所有接口

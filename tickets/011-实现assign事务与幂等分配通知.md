@@ -7,7 +7,7 @@ Estimate: 5
 Depends: 007,009
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 实现 Assign 事务与幂等分配通知

@@ -7,7 +7,7 @@ Estimate: 3
 Depends: 002,004
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 实现 Cognito 登录回调与 401 重定向处理

@@ -7,7 +7,7 @@ Estimate: 2
 Depends: 003,006
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 实现 Users Assignee 列表接口

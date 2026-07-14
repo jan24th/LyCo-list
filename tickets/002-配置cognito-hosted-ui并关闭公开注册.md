@@ -7,7 +7,7 @@ Estimate: 3
 Depends: 001
 PHASE: 1
 CYCLE: 1
-Source: .github/PROJECT_WORKFLOW.md
+Source: 2026-07-13-lyco-list-design.md
 ---
 
 # 配置 Cognito Hosted UI 并关闭公开注册
