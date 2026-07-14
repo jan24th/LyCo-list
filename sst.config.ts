@@ -14,22 +14,17 @@ export default $config({
     };
   },
   async run() {
-    const userPoolId = new sst.Config.String("USER_POOL_ID", {
-      default: "todo-in-ticket-002",
-    });
-    const userPoolClientId = new sst.Config.String("USER_POOL_CLIENT_ID", {
-      default: "todo-in-ticket-002",
-    });
+    const userPoolId = new sst.Secret("USER_POOL_ID", "todo-in-ticket-002");
+    const userPoolClientId = new sst.Secret(
+      "USER_POOL_CLIENT_ID",
+      "todo-in-ticket-002",
+    );
 
     const api = new sst.aws.ApiGatewayV2("Api", {
       cors: {
         allowOrigins: ["*"],
         allowMethods: ["*"],
         allowHeaders: ["content-type", "authorization"],
-      },
-      throttle: {
-        rate: 100,
-        burst: 200,
       },
     });
 

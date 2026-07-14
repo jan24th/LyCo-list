@@ -654,7 +654,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 2. 构建产物上传到 S3。
 3. CloudFront 作为 CDN 和 HTTPS 入口，绑定 `app.example.com`。
 4. 前端环境变量通过 SST `StaticSite` 的 `environment` 配置在构建时注入。
-5. `VITE_API_URL` 直接引用 `api.url`；`VITE_USER_POOL_ID` 和 `VITE_USER_POOL_CLIENT_ID` 在 ticket 001 中使用 `sst.Config.String` 占位（默认值 `todo-in-ticket-002`），ticket 002 部署 Cognito 后替换为真实 ID。
+5. `VITE_API_URL` 直接引用 `api.url`；`VITE_USER_POOL_ID` 和 `VITE_USER_POOL_CLIENT_ID` 在 ticket 001 中使用 `sst.Secret` 占位（placeholder 值 `todo-in-ticket-002`），ticket 002 部署 Cognito 后替换为真实 ID。
 6. Vite 通过 `import.meta.env` 读取 `VITE_API_URL`、`VITE_USER_POOL_ID`、`VITE_USER_POOL_CLIENT_ID` 等变量。
 
 ### 本地开发

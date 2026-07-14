@@ -19,7 +19,7 @@
 - 部署：SST v3，根 `sst.config.ts` 配置 `ApiGatewayV2` + `StaticSite`。
 - 共享包：`packages/shared` 提供 `buildResponse` 和 `errorResponse(message, code?)`，每个 Lambda 独立打包。
 - API 测试集合：`bruno/` 目录，含 `development` / `production` 环境和 `GET /api/health` 请求。
-- 域名与 Cognito：ticket 001 中仅使用 `sst.Config.String` 占位，真实值在 ticket 002 中替换。
+- 域名与 Cognito：ticket 001 中仅使用 `sst.Secret` 占位（placeholder 值），真实值在 ticket 002 中替换。
 - 所有业务逻辑按 TDD 开发；脚手架代码（如 `buildResponse`、health handler）也必须编写测试并满足 100% 覆盖率。
 - Git 提交格式：`类型(范围): 描述`，英文、小写、祈使句、末尾不加句号。
 
@@ -657,22 +657,17 @@ export default $config({
     };
   },
   async run() {
-    const userPoolId = new sst.Config.String("USER_POOL_ID", {
-      default: "todo-in-ticket-002",
-    });
-    const userPoolClientId = new sst.Config.String("USER_POOL_CLIENT_ID", {
-      default: "todo-in-ticket-002",
-    });
+    const userPoolId = new sst.Secret("USER_POOL_ID", "todo-in-ticket-002");
+    const userPoolClientId = new sst.Secret(
+      "USER_POOL_CLIENT_ID",
+      "todo-in-ticket-002",
+    );
 
     const api = new sst.aws.ApiGatewayV2("Api", {
       cors: {
         allowOrigins: ["*"],
         allowMethods: ["*"],
         allowHeaders: ["content-type", "authorization"],
-      },
-      throttle: {
-        rate: 100,
-        burst: 200,
       },
     });
 
