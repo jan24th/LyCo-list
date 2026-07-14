@@ -24,6 +24,7 @@ export default defineConfig({
         "**/test-setup.ts",
         "**/vite.config.ts",
         "**/sst.config.ts",
+        "**/src/test/**",
       ],
     },
   },
