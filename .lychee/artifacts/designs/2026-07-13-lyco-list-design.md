@@ -1,9 +1,5 @@
 # LyCo-list 待办应用设计文档（AWS Serverless 共享版）
 
-> 最后更新：2026-07-13（经架构一致性审核后的修订版本）
->
-> 本文档替代项目 README 中原有的 Hono + Prisma + SQLite 方案，成为当前实现权威。
-
 ## 目标
 
 构建一个功能对标 Apple Reminders 的 Web App / PWA 待办应用，采用前后端分离架构。前端是可安装的 PWA；后端采用完全托管在 AWS 上的 Serverless 架构。MVP 阶段先实现核心功能，离线写入与多端同步放到后续阶段。
@@ -38,56 +34,56 @@ LyCo-list/
 
 ### 前端
 
-| 层级 | 工具 |
-|---|---|
-| 包管理器 | Bun |
-| 代码规范 | Biome（替代 ESLint + Prettier） |
-| 类型检查 | tsc / tsgo |
-| 测试 | Vitest（覆盖率目标 100%） |
-| 构建工具 | Vite |
-| 框架 | React + TypeScript |
-| 路由 | TanStack Router |
-| 数据获取 | TanStack Query |
-| 客户端状态 | TanStack Store |
-| 表单 | TanStack Form |
-| 样式 | Tailwind CSS |
-| 基础组件 | shadcn/ui |
-| PWA | vite-plugin-pwa |
-| 通知 | Service Worker + Notification API |
-| 图标 | Lucide React |
-| 认证 | AWS Amplify Auth 模块（MVP 先用 Cognito Hosted UI） |
-| API 调用 | fetch |
-| 工具库 | date-fns, @date-fns/tz, uuid |
+| 层级       | 工具                                                |
+| ---------- | --------------------------------------------------- |
+| 包管理器   | Bun                                                 |
+| 代码规范   | Biome（替代 ESLint + Prettier）                     |
+| 类型检查   | tsc / tsgo                                          |
+| 测试       | Vitest（覆盖率目标 100%）                           |
+| 构建工具   | Vite                                                |
+| 框架       | React + TypeScript                                  |
+| 路由       | TanStack Router                                     |
+| 数据获取   | TanStack Query                                      |
+| 客户端状态 | TanStack Store                                      |
+| 表单       | TanStack Form                                       |
+| 样式       | Tailwind CSS                                        |
+| 基础组件   | shadcn/ui                                           |
+| PWA        | vite-plugin-pwa                                     |
+| 通知       | Service Worker + Notification API                   |
+| 图标       | Lucide React                                        |
+| 认证       | AWS Amplify Auth 模块（MVP 先用 Cognito Hosted UI） |
+| API 调用   | fetch                                               |
+| 工具库     | date-fns, @date-fns/tz, uuid                        |
 
 ### 后端
 
-| 层级 | 工具 |
-|---|---|
-| 包管理器 | Bun |
-| 代码规范 | Biome |
-| 类型检查 | tsc / tsgo |
-| 测试 | Vitest（覆盖率目标 100%） |
-| 网关 | API Gateway HTTP API v2 |
-| 授权 | Cognito User Pool + JWT 授权器 |
-| 计算 | AWS Lambda (Node.js 24, TypeScript) |
-| 框架 | 无，原生 Lambda handler |
-| 校验 | Zod |
-| 数据库 | Amazon DynamoDB（单表设计） |
+| 层级     | 工具                                                             |
+| -------- | ---------------------------------------------------------------- |
+| 包管理器 | Bun                                                              |
+| 代码规范 | Biome                                                            |
+| 类型检查 | tsc / tsgo                                                       |
+| 测试     | Vitest（覆盖率目标 100%）                                        |
+| 网关     | API Gateway HTTP API v2                                          |
+| 授权     | Cognito User Pool + JWT 授权器                                   |
+| 计算     | AWS Lambda (Node.js 24, TypeScript)                              |
+| 框架     | 无，原生 Lambda handler                                          |
+| 校验     | Zod                                                              |
+| 数据库   | Amazon DynamoDB（单表设计）                                      |
 | 延迟清理 | `sst.aws.CronV2`（Amazon EventBridge Scheduler）+ cleanup Lambda |
-| 共享代码 | `packages/shared`（每个 Lambda 独立打包） |
-| 部署 | SST v3 |
+| 共享代码 | `packages/shared`（每个 Lambda 独立打包）                        |
+| 部署     | SST v3                                                           |
 
 ### 基础设施
 
-| 资源 | 服务 |
-|---|---|
-| 前端托管 | S3 + CloudFront |
-| API 入口 | API Gateway HTTP API |
-| 认证 | Cognito User Pool |
-| 数据库 | DynamoDB |
-| DNS | Route 53 |
-| SSL/TLS | AWS Certificate Manager |
-| 部署工具 | SST v3 |
+| 资源     | 服务                    |
+| -------- | ----------------------- |
+| 前端托管 | S3 + CloudFront         |
+| API 入口 | API Gateway HTTP API    |
+| 认证     | Cognito User Pool       |
+| 数据库   | DynamoDB                |
+| DNS      | Route 53                |
+| SSL/TLS  | AWS Certificate Manager |
+| 部署工具 | SST v3                  |
 
 ## 范围
 
@@ -236,38 +232,38 @@ cleanup Lambda ───────────────► DynamoDB
 
 ### 通用字段
 
-| 字段 | 说明 |
-|---|---|
-| `PK` | 分区键 |
-| `SK` | 排序键 |
-| `GSI1PK` | 全局二级索引 1 分区键 |
-| `GSI1SK` | 全局二级索引 1 排序键 |
+| 字段         | 说明                                                       |
+| ------------ | ---------------------------------------------------------- |
+| `PK`         | 分区键                                                     |
+| `SK`         | 排序键                                                     |
+| `GSI1PK`     | 全局二级索引 1 分区键                                      |
+| `GSI1SK`     | 全局二级索引 1 排序键                                      |
 | `entityType` | `LIST`, `TASK`, `REMINDER`, `NOTIFICATION`, `DELETION_JOB` |
-| `createdBy` | 创建者 Cognito `sub`（UUID），前端不展示，仅用于审计 |
-| `updatedBy` | 最后修改者 Cognito `sub`（UUID），前端不展示，仅用于审计 |
-| `version` | 乐观并发版本号；每次业务更新递增 |
+| `createdBy`  | 创建者 Cognito `sub`（UUID），前端不展示，仅用于审计       |
+| `updatedBy`  | 最后修改者 Cognito `sub`（UUID），前端不展示，仅用于审计   |
+| `version`    | 乐观并发版本号；每次业务更新递增                           |
 
 ### 实体键设计
 
 #### 列表（LIST）
 
-| 字段 | 值 |
-|---|---|
-| PK | `LIST#<listId>` |
-| SK | `METADATA` |
-| GSI1PK | `LISTS` |
+| 字段   | 值                               |
+| ------ | -------------------------------- |
+| PK     | `LIST#<listId>`                  |
+| SK     | `METADATA`                       |
+| GSI1PK | `LISTS`                          |
 | GSI1SK | `ORDER#<orderKey>#LIST#<listId>` |
 
 属性：`name`, `color`, `icon`, `order`, `version`, `deletedAt`, `undoUntil`, `deletionVersion`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`。
 
 #### 任务（TASK）
 
-| 字段 | 值 |
-|---|---|
-| PK | `TASK#<taskId>` |
-| SK | `METADATA` |
-| GSI1PK | `TASKS` |
-| GSI1SK | `LIST#<listId>#PARENT#<parentId|ROOT>#ORDER#<orderKey>#TASK#<taskId>` |
+| 字段   | 值                              |
+| ------ | ------------------------------- | ------------------------------------- |
+| PK     | `TASK#<taskId>`                 |
+| SK     | `METADATA`                      |
+| GSI1PK | `TASKS`                         |
+| GSI1SK | `LIST#<listId>#PARENT#<parentId | ROOT>#ORDER#<orderKey>#TASK#<taskId>` |
 
 属性：`title`, `notes`, `listId`, `parentId`, `assigneeIds`, `isCompleted`, `isFlagged`, `priority`, `dueDate`, `dueTime`, `timeZone`, `recurrence`, `completedAt`, `lastCompletedAt`, `order`, `version`, `deletedAt`, `undoUntil`, `deletionVersion`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`。
 
@@ -281,23 +277,23 @@ cleanup Lambda ───────────────► DynamoDB
 
 #### 提醒（REMINDER）
 
-| 字段 | 值 |
-|---|---|
-| PK | `REMINDER#<reminderId>` |
-| SK | `METADATA` |
-| GSI1PK | `TASK#<taskId>#REMINDERS` |
+| 字段   | 值                                          |
+| ------ | ------------------------------------------- |
+| PK     | `REMINDER#<reminderId>`                     |
+| SK     | `METADATA`                                  |
+| GSI1PK | `TASK#<taskId>#REMINDERS`                   |
 | GSI1SK | `TRIGGER#<triggerAt>#REMINDER#<reminderId>` |
 
 属性：`taskId`, `triggerAt`, `recurrence`, `timeZone`, `isEnabled`, `version`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`。提醒是唯一持久化数据源，任务记录不嵌入提醒数组；任务详情响应按需组装提醒。
 
 #### 通知（NOTIFICATION）
 
-| 字段 | 值 |
-|---|---|
-| PK | `NOTIFICATION#<notificationId>` |
-| SK | `METADATA` |
-| GSI1PK | `USER#<userSub>#NOTIFICATIONS` |
-| GSI1SK | `NOTIFICATION#<createdAt>` |
+| 字段   | 值                              |
+| ------ | ------------------------------- |
+| PK     | `NOTIFICATION#<notificationId>` |
+| SK     | `METADATA`                      |
+| GSI1PK | `USER#<userSub>#NOTIFICATIONS`  |
+| GSI1SK | `NOTIFICATION#<createdAt>`      |
 
 属性：`type`, `recipientId`, `taskId`, `reminderId`, `taskTitle`, `message`, `isRead`, `readAt`, `createdAt`, `expiresAtEpoch`。
 
@@ -308,11 +304,11 @@ cleanup Lambda ───────────────► DynamoDB
 
 #### 延迟删除任务（DELETION_JOB）
 
-| 字段 | 值 |
-|---|---|
-| PK | `DELETION_JOB#<jobId>` |
-| SK | `METADATA` |
-| GSI1PK | `DELETION_JOBS` |
+| 字段   | 值                            |
+| ------ | ----------------------------- |
+| PK     | `DELETION_JOB#<jobId>`        |
+| SK     | `METADATA`                    |
+| GSI1PK | `DELETION_JOBS`               |
 | GSI1SK | `RUN#<undoUntil>#JOB#<jobId>` |
 
 属性：`targetType`, `targetId`, `deletionVersion`, `undoUntil`, `status`, `cursor`, `createdAt`, `updatedAt`。cleanup Lambda 只处理超过撤销期限且删除版本仍匹配的任务。
@@ -320,6 +316,7 @@ cleanup Lambda ───────────────► DynamoDB
 ### GSI 数量
 
 MVP 只保留 **1 个 GSI（GSI1）**，覆盖以下访问模式：
+
 - `LISTS` → 查询所有未删除列表并按手动顺序排列
 - `TASKS` + `LIST#<listId>#` 前缀 → 查询该列表下的全部任务
 - `TASKS` + `LIST#<listId>#PARENT#<parentId>#` 前缀 → 查询某任务的直接子任务
@@ -328,23 +325,24 @@ MVP 只保留 **1 个 GSI（GSI1）**，覆盖以下访问模式：
 - `DELETION_JOBS` → 查询到达清理时间的删除任务
 
 智能列表（今天、计划、全部、已标记、已完成、分配给我等）在 Lambda 内过滤。理由：
+
 - 项目数据量极小，过滤成本可忽略。
 - GSI 过多会增加写放大和架构复杂度。
 - 未来如某个查询成为瓶颈，可再增加 GSI。
 
 ### 主要查询模式
 
-| 场景 | 查询方式 |
-|---|---|
-| 按 ID 读取列表/任务/提醒/通知 | 使用实体自身 `PK` + `SK = METADATA` |
-| 所有列表 | `GSI1 PK = LISTS` |
-| 所有任务 | `GSI1 PK = TASKS` |
-| 某列表下任务 | `GSI1 PK = TASKS, SK begins_with LIST#<listId>#` |
-| 某任务子任务 | `GSI1 PK = TASKS, SK begins_with LIST#<listId>#PARENT#<parentId>#` |
-| 某任务所有提醒 | `GSI1 PK = TASK#<taskId>#REMINDERS` |
-| 逾期提醒 | 小数据量下扫描 `REMINDER` 实体并过滤 `isEnabled` 与 `triggerAt <= now`；超过规模阈值后新增到期索引 |
-| 某用户未读通知 | `GSI1 PK = USER#<userSub>#NOTIFICATIONS, 过滤 isRead = false` |
-| 待清理删除任务 | `GSI1 PK = DELETION_JOBS, SK BETWEEN RUN# AND RUN#<now>#\uffff` |
+| 场景                          | 查询方式                                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| 按 ID 读取列表/任务/提醒/通知 | 使用实体自身 `PK` + `SK = METADATA`                                                                |
+| 所有列表                      | `GSI1 PK = LISTS`                                                                                  |
+| 所有任务                      | `GSI1 PK = TASKS`                                                                                  |
+| 某列表下任务                  | `GSI1 PK = TASKS, SK begins_with LIST#<listId>#`                                                   |
+| 某任务子任务                  | `GSI1 PK = TASKS, SK begins_with LIST#<listId>#PARENT#<parentId>#`                                 |
+| 某任务所有提醒                | `GSI1 PK = TASK#<taskId>#REMINDERS`                                                                |
+| 逾期提醒                      | 小数据量下扫描 `REMINDER` 实体并过滤 `isEnabled` 与 `triggerAt <= now`；超过规模阈值后新增到期索引 |
+| 某用户未读通知                | `GSI1 PK = USER#<userSub>#NOTIFICATIONS, 过滤 isRead = false`                                      |
+| 待清理删除任务                | `GSI1 PK = DELETION_JOBS, SK BETWEEN RUN# AND RUN#<now>#\uffff`                                    |
 
 所有 Query/Scan 必须处理 DynamoDB 1 MB 分页，通过不透明 cursor 暴露给 API 调用方。软删除或 TTL 已过期实体必须在服务层过滤。
 
@@ -353,7 +351,14 @@ MVP 只保留 **1 个 GSI（GSI1）**，覆盖以下访问模式：
 `packages/shared` 提供前端与 Lambda 共享的 Zod schema 和 TypeScript 类型。绝对时间点使用 ISO 8601 UTC；`dueDate` / `dueTime` 保留本地日历语义，并与 IANA `timeZone` 组合解释：
 
 ```typescript
-type RecurrenceRule = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'weekdays';
+type RecurrenceRule =
+  | "none"
+  | "daily"
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "yearly"
+  | "weekdays";
 
 interface List {
   id: string;
@@ -371,16 +376,16 @@ interface List {
 }
 
 interface User {
-  id: string;       // Cognito sub
+  id: string; // Cognito sub
   name: string;
 }
 
 interface Reminder {
   id: string;
   taskId: string;
-  triggerAt: string;      // ISO 8601 UTC
+  triggerAt: string; // ISO 8601 UTC
   recurrence: RecurrenceRule;
-  timeZone: string;       // IANA 时区，例如 Asia/Shanghai
+  timeZone: string; // IANA 时区，例如 Asia/Shanghai
   isEnabled: boolean;
   version: number;
   createdAt: string;
@@ -395,13 +400,13 @@ interface Task {
   notes: string;
   listId: string;
   parentId: string | null;
-  assigneeIds: string[];  // Cognito sub 数组
+  assigneeIds: string[]; // Cognito sub 数组
   isCompleted: boolean;
   isFlagged: boolean;
-  priority: 'none' | 'low' | 'medium' | 'high';
-  dueDate?: string;        // 本地日历日期 YYYY-MM-DD
-  dueTime?: string;        // 本地时间 HH:mm
-  timeZone?: string;       // 设置截止时间或重复规则时必填
+  priority: "none" | "low" | "medium" | "high";
+  dueDate?: string; // 本地日历日期 YYYY-MM-DD
+  dueTime?: string; // 本地时间 HH:mm
+  timeZone?: string; // 设置截止时间或重复规则时必填
   recurrence: RecurrenceRule;
   completedAt: string | null;
   lastCompletedAt: string | null;
@@ -417,7 +422,7 @@ interface Task {
 
 interface Notification {
   id: string;
-  type: 'assignment' | 'reminder';
+  type: "assignment" | "reminder";
   recipientId: string;
   taskId: string;
   reminderId?: string;
@@ -472,41 +477,41 @@ interface Notification {
 
 例如 `lists` Lambda 处理：
 
-| 方法 | 路径 |
-|---|---|
-| GET | `/api/lists` |
-| POST | `/api/lists` |
-| PATCH | `/api/lists/{id}` |
+| 方法   | 路径              |
+| ------ | ----------------- |
+| GET    | `/api/lists`      |
+| POST   | `/api/lists`      |
+| PATCH  | `/api/lists/{id}` |
 | DELETE | `/api/lists/{id}` |
 
 ### 接口列表
 
-| 方法 | 路径 | 所属 Lambda |
-|---|---|---|
-| GET | `/api/health` | `health` |
-| GET | `/api/lists` | `lists` |
-| POST | `/api/lists` | `lists` |
-| PATCH | `/api/lists/{id}` | `lists` |
-| DELETE | `/api/lists/{id}` | `lists` |
-| POST | `/api/lists/{id}/restore` | `lists` |
-| GET | `/api/tasks` | `tasks` |
-| POST | `/api/tasks` | `tasks` |
-| GET | `/api/tasks/{id}` | `tasks` |
-| PATCH | `/api/tasks/{id}` | `tasks` |
-| DELETE | `/api/tasks/{id}` | `tasks` |
-| POST | `/api/tasks/{id}/complete` | `tasks` |
-| POST | `/api/tasks/{id}/move` | `tasks` |
-| POST | `/api/tasks/{id}/restore` | `tasks` |
-| GET | `/api/tasks/{taskId}/reminders` | `reminders` |
-| POST | `/api/tasks/{taskId}/reminders` | `reminders` |
-| PATCH | `/api/tasks/{taskId}/reminders/{id}` | `reminders` |
-| DELETE | `/api/tasks/{taskId}/reminders/{id}` | `reminders` |
-| POST | `/api/reminders/process-due` | `reminders` |
-| GET | `/api/users` | `users` |
-| GET | `/api/notifications/pending` | `notifications` |
-| POST | `/api/notifications/{id}/read` | `notifications` |
-| POST | `/api/notifications/read-all` | `notifications` |
-| GET | `/api/search` | `search` |
+| 方法   | 路径                                 | 所属 Lambda     |
+| ------ | ------------------------------------ | --------------- |
+| GET    | `/api/health`                        | `health`        |
+| GET    | `/api/lists`                         | `lists`         |
+| POST   | `/api/lists`                         | `lists`         |
+| PATCH  | `/api/lists/{id}`                    | `lists`         |
+| DELETE | `/api/lists/{id}`                    | `lists`         |
+| POST   | `/api/lists/{id}/restore`            | `lists`         |
+| GET    | `/api/tasks`                         | `tasks`         |
+| POST   | `/api/tasks`                         | `tasks`         |
+| GET    | `/api/tasks/{id}`                    | `tasks`         |
+| PATCH  | `/api/tasks/{id}`                    | `tasks`         |
+| DELETE | `/api/tasks/{id}`                    | `tasks`         |
+| POST   | `/api/tasks/{id}/complete`           | `tasks`         |
+| POST   | `/api/tasks/{id}/move`               | `tasks`         |
+| POST   | `/api/tasks/{id}/restore`            | `tasks`         |
+| GET    | `/api/tasks/{taskId}/reminders`      | `reminders`     |
+| POST   | `/api/tasks/{taskId}/reminders`      | `reminders`     |
+| PATCH  | `/api/tasks/{taskId}/reminders/{id}` | `reminders`     |
+| DELETE | `/api/tasks/{taskId}/reminders/{id}` | `reminders`     |
+| POST   | `/api/reminders/process-due`         | `reminders`     |
+| GET    | `/api/users`                         | `users`         |
+| GET    | `/api/notifications/pending`         | `notifications` |
+| POST   | `/api/notifications/{id}/read`       | `notifications` |
+| POST   | `/api/notifications/read-all`        | `notifications` |
+| GET    | `/api/search`                        | `search`        |
 
 ### 请求与响应
 
@@ -549,29 +554,29 @@ TanStack Query 的 `queryFn` 直接使用 `apiClient('/lists')` 等。
 
 ```ts
 const apiClient = async (path: string, options?: RequestInit) => {
-  const session = await fetchAuthSession()
-  const token = session.tokens?.accessToken?.toString()
+  const session = await fetchAuthSession();
+  const token = session.tokens?.accessToken?.toString();
   return fetch(`${import.meta.env.VITE_API_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
       ...options?.headers,
     },
-  })
-}
+  });
+};
 ```
 
 ## 智能列表定义
 
-| 列表 | 过滤条件 | 排序 |
-|---|---|---|
-| 今天 | `dueDate` 为今天且 `isCompleted === false` | 最早到期时间优先，其次优先级 |
-| 计划 | `dueDate` 存在且 `isCompleted === false` | 截止日期升序 |
-| 全部 | `isCompleted === false` | 创建时间降序 |
-| 已标记 | `isFlagged === true` 且 `isCompleted === false` | 优先级优先，其次截止日期 |
-| 已完成 | `isCompleted === true` | 完成时间降序 |
-| 分配给我 | 当前用户 sub 在 `assigneeIds` 中且 `isCompleted === false` | 创建时间降序 |
+| 列表     | 过滤条件                                                   | 排序                         |
+| -------- | ---------------------------------------------------------- | ---------------------------- |
+| 今天     | `dueDate` 为今天且 `isCompleted === false`                 | 最早到期时间优先，其次优先级 |
+| 计划     | `dueDate` 存在且 `isCompleted === false`                   | 截止日期升序                 |
+| 全部     | `isCompleted === false`                                    | 创建时间降序                 |
+| 已标记   | `isFlagged === true` 且 `isCompleted === false`            | 优先级优先，其次截止日期     |
+| 已完成   | `isCompleted === true`                                     | 完成时间降序                 |
+| 分配给我 | 当前用户 sub 在 `assigneeIds` 中且 `isCompleted === false` | 创建时间降序                 |
 
 自定义列表使用手动拖拽排序。默认视图是"今天"智能列表。
 
@@ -697,12 +702,12 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 ## 测试策略
 
-| 层级 | 方式 |
-|---|---|
-| 单元测试 | Vitest，覆盖 Lambda handler 逻辑、Zod schema |
-| 集成测试 | Vitest + DynamoDB Local（Docker 或内存实例） |
-| 覆盖率 | statements、branches、functions、lines 均达到 100% |
-| API 手动测试 | Bruno 集合，需先获取 Cognito Access Token |
+| 层级         | 方式                                               |
+| ------------ | -------------------------------------------------- |
+| 单元测试     | Vitest，覆盖 Lambda handler 逻辑、Zod schema       |
+| 集成测试     | Vitest + DynamoDB Local（Docker 或内存实例）       |
+| 覆盖率       | statements、branches、functions、lines 均达到 100% |
+| API 手动测试 | Bruno 集合，需先获取 Cognito Access Token          |
 
 ### 测试注意事项
 
