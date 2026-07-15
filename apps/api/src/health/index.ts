@@ -1,6 +1,16 @@
 import { buildResponse } from "@lyco/shared";
-import type { APIGatewayProxyHandlerV2 } from "aws-lambda";
+import type {
+  APIGatewayProxyEventV2,
+  APIGatewayProxyHandlerV2,
+} from "aws-lambda";
 
-export const handler: APIGatewayProxyHandlerV2 = async () => {
-  return buildResponse(200, { ok: true });
+export const handler: APIGatewayProxyHandlerV2 = async (
+  event: APIGatewayProxyEventV2,
+) => {
+  const requestId = event.requestContext?.requestId ?? "unknown";
+  return buildResponse(200, {
+    ok: true,
+    timestamp: new Date().toISOString(),
+    requestId,
+  });
 };
