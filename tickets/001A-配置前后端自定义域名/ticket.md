@@ -54,13 +54,15 @@ When SST 部署自定义域名资源
 Then Route 53 中自动生成指向 CloudFront 分配的 `app.jan24th.today` 记录
 And 自动生成指向 API Gateway 自定义域名的 `api.jan24th.today` 记录
 
-### 场景 4：本地开发与生产配置区分
+### 场景 4：按 stage 区分自定义域名绑定
 
 Given `sst.config.ts` 中按当前 stage 区分环境（SST v3 `run()` 内使用 `$app.stage`）
 When `stage === "dev"` 时
-Then 不强制绑定 `app.jan24th.today` / `api.jan24th.today`，避免开发环境覆盖生产域名
+Then 不绑定任何自定义域名，使用 SST 自动生成的 URL
 When `stage === "prod"` 时
-Then 绑定正式自定义域名
+Then 绑定正式自定义域名 `app.jan24th.today` / `api.jan24th.today`
+When `stage === "acc"` 时
+Then 绑定验收环境自定义域名 `app.acc.jan24th.today` / `api.acc.jan24th.today`
 
 ### 场景 5：Bruno 生产环境 baseUrl 同步
 
@@ -78,5 +80,5 @@ Then 其值为 `https://api.jan24th.today`
 - 域名 `jan24th.today` 已购买并迁移到 Route 53；`www.jan24th.today` 已用于其他网站，本项目仅使用 `app` / `api` / `auth` 子域名。
 - SST v3 的 `sst.aws.StaticSite` 与 `sst.aws.ApiGatewayV2` 均支持 `domain` 字段；若域名已在同一 AWS 账户的 Route 53 中托管，SST 通常可自动查找 hosted zone 并创建 ACM 证书与 DNS 记录。
 - 若 SST 无法自动定位 hosted zone，可显式使用 `sst.aws.Route53` 引用 `jan24th.today` 的 hosted zone ID，再传入 `domain` 配置对象。
-- 建议在 `sst.config.ts` 中根据 `input.stage` 条件启用自定义域名：仅在 `prod` stage 绑定 `app.jan24th.today` / `api.jan24th.today`，`dev` stage 使用 SST 自动生成的 URL，避免开发部署影响生产 DNS。
+- 建议在 `sst.config.ts` 中根据 `$app.stage` 条件启用自定义域名：`prod` stage 绑定 `app.jan24th.today` / `api.jan24th.today`，`acc` stage 绑定 `app.acc.jan24th.today` / `api.acc.jan24th.today`，`dev` stage 使用 SST 自动生成的 URL，避免开发部署影响生产 DNS。
 - 本 ticket 完成后，设计文档中“域名与证书”章节的 SST 实现部分应同步更新或引用本 ticket。

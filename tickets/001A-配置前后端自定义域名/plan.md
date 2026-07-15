@@ -48,17 +48,24 @@ Expected: File contains `sst.aws.ApiGatewayV2("Api", { ... })` and `sst.aws.Stat
 Add immediately inside `async run() {`:
 
 ```typescript
-const isProd = $app.stage === "prod";
 const baseDomain = process.env.BASE_DOMAIN;
+const isCustomDomainStage = $app.stage === "prod" || $app.stage === "acc";
+const stagePrefix = $app.stage === "prod" ? "" : `${$app.stage}.`;
 const domain = {
-  api: isProd && baseDomain ? `api.${baseDomain}` : undefined,
-  web: isProd && baseDomain ? `app.${baseDomain}` : undefined,
+  api:
+    isCustomDomainStage && baseDomain
+      ? `api.${stagePrefix}${baseDomain}`
+      : undefined,
+  web:
+    isCustomDomainStage && baseDomain
+      ? `app.${stagePrefix}${baseDomain}`
+      : undefined,
 };
 ```
 
 > SST v3 exposes the current stage through the global `$app.stage` variable inside `run()`. Do not use `input.stage` here; `input` is only available in the `app(input)` callback.
 >
-> The base domain is read from a single environment variable so the same config can be used across stages without hardcoding the apex domain. Create `.env` or `.env.prod` from `.env.example` and set `BASE_DOMAIN` before deploying to prod. API will use `api.<BASE_DOMAIN>` and web will use `app.<BASE_DOMAIN>`.
+> The base domain is read from a single environment variable so the same config can be used across stages without hardcoding the apex domain. Create `.env`, `.env.prod`, or `.env.acc` from `.env.example` and set `BASE_DOMAIN` before deploying. API/web use `api.<BASE_DOMAIN>` / `app.<BASE_DOMAIN>` in prod and `api.acc.<BASE_DOMAIN>` / `app.acc.<BASE_DOMAIN>` in acc. Dev stage binds no custom domain.
 
 - [ ] **Step 3: 为 `ApiGatewayV2` 添加 `domain` 配置**
 
@@ -364,4 +371,4 @@ If custom domain deployment causes issues in prod:
 1. Domain `jan24th.today` and its hosted zone exist in the same AWS account and region where `sst deploy --stage prod` runs.
 2. The AWS profile used by `sst deploy` has permissions to create/modify Route 53 records and ACM certificates.
 3. Ticket 001's base infrastructure (ApiGatewayV2, StaticSite, placeholder Cognito secrets) already deploys successfully before adding custom domains.
-4. Environment variable `BASE_DOMAIN` is set in `.env` or `.env.prod` before deploying to prod (see `.env.example`).
+4. Environment variable `BASE_DOMAIN` is set in `.env`, `.env.prod`, or `.env.acc` before deploying to a stage that needs custom domains (see `.env.example`).
