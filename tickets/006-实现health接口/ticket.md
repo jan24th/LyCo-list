@@ -1,7 +1,7 @@
 ---
 Title: 实现 Health 接口
 ID: 006
-Status: In Progress
+Status: Archived
 Labels: api,backend
 Estimate: 1
 Depends: 001
@@ -46,3 +46,10 @@ Then 仍然返回 200
 - `/api/health` 在 `sst.config.ts` 中显式配置 `authorizer: "none"`，确保 ticket 002 启用 Cognito JWT 授权器后仍保持公开访问。
 - handler 返回 `ok: true`、`timestamp` 和 `requestId`，便于调用方确认服务运行正常并关联请求。
 - `sst dev` 完整验证需要有效的 AWS 凭证与 `ap-southeast-1` 访问权限；无凭证时无法本地调用 API Gateway。
+
+## 归档记录
+
+- 合并时间：2026-07-15
+- 合并分支：`feat/006-health-endpoint` → `main`
+- 状态：已完成并归档
+- 备注：health 端点实现已合并，包含完整测试与 100% 覆盖率。
