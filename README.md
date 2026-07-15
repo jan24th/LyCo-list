@@ -44,6 +44,7 @@ LyCo-list/
 ├── packages/
 │   └── shared/       # 共享类型、schema、工具函数
 ├── bruno/            # Bruno API 请求集合
+├── tickets/          # 本地 Linear-style ticket（每个 ticket 含 ticket.md + plan.md）
 ├── sst.config.ts     # SST 根配置
 ├── biome.json        # 代码规范配置
 └── vitest.config.ts  # Vitest workspace 配置
@@ -93,12 +94,12 @@ bun dev
 
 ## 开发规范
 
-- Issue 使用 GitHub Issues 创建和维护，GitHub Projects 作为状态看板。
-- 复杂 Issue 的实施计划存放在 `.lychee/artifacts/plans/`，并在对应 Issue 中互相链接。
+- 使用本地 Linear-style ticket 方案管理任务，ticket 存放在 `tickets/<编号>-<描述>/` 目录下。
+- 每个 ticket 包含 `ticket.md`（背景、范围、验收标准、测试要求、关联设计）和 `plan.md`（实施计划）。
 - 所有业务逻辑采用 TDD（测试驱动开发）。
 - 覆盖率目标：statements、branches、functions、lines 均达到 100%。
 - 提交信息遵循约定式提交：`类型(范围): 描述`，英文、小写、祈使句、末尾不加句号。
-- 当前实现待办见 GitHub Issues/Projects，完整设计见 `.lychee/artifacts/designs/`。
+- 当前实现待办见 `tickets/`，完整设计见 `.lychee/artifacts/designs/`。
 
 ## 许可证
 
