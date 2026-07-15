@@ -1,7 +1,7 @@
 ---
 Title: 实现 Health 接口
 ID: 006
-Status: Archived
+Status: ARCHIVED
 Labels: api,backend
 Estimate: 1
 Depends: 001

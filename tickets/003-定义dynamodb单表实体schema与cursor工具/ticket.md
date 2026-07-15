@@ -19,11 +19,13 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ## 范围
 
 ### 包含
+
 - `packages/shared` 中的 Zod 实体 schema（列表、任务、提醒、用户等）
 - 共享的错误响应结构与数据校验 helper
 - DynamoDB `LastEvaluatedKey` 与 opaque cursor 的编码/解码工具
 
 ### 不包含
+
 - DynamoDB 表的 SST 部署
 - 实际业务 API 接口
 - 复杂查询与索引设计

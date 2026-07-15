@@ -1,10 +1,10 @@
 ---
 Title: 搭建 SST v3 Monorepo 基础结构
 ID: 001
-Status: Archived
+Status: ARCHIVED
 Labels: infra,monorepo
 Estimate: 5
-Depends: 
+Depends:
 PHASE: 1
 CYCLE: 1
 Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
@@ -19,6 +19,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ## 范围
 
 ### 包含
+
 - Bun workspace、SST v3 根配置、共享工具链
 - 最小可运行的 `apps/web` 和 `apps/api`
 - 占位 health Lambda 和 StaticSite
@@ -26,6 +27,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - Bruno 集合占位（含 health 请求）
 
 ### 不包含
+
 - Cognito 配置与认证（ticket 002）
 - DynamoDB 表与 schema（ticket 003）
 - React PWA 骨架（ticket 004）

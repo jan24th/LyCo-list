@@ -1,7 +1,7 @@
 ---
 Title: 配置前后端自定义域名
 ID: 001A
-Status: Archived
+Status: ARCHIVED
 Cycle: 1
 Labels: infra,domain
 Estimate: 3
@@ -19,6 +19,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ## 范围
 
 ### 包含
+
 - 在 `sst.config.ts` 中引用已托管在 Amazon Route 53 的 `jan24th.today` 域名。
 - 为 `sst.aws.StaticSite`（前端）配置自定义域名 `app.jan24th.today`。
 - 为 `sst.aws.ApiGatewayV2`（API）配置自定义域名 `api.jan24th.today`。
@@ -26,6 +27,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - 同步更新 Bruno `production.bru` 的 `baseUrl`（若尚未更新为 `https://api.jan24th.today`）。
 
 ### 不包含
+
 - Cognito Hosted UI 自定义域名 `auth.jan24th.today`（由 ticket 002 负责）。
 - 新域名的购买或 Route 53 托管迁移（已完成，见设计文档）。
 - CloudFront / API Gateway 之外的额外 CDN 或 WAF 配置。

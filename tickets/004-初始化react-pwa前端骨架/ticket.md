@@ -19,12 +19,14 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ## 范围
 
 ### 包含
+
 - Vite + React + TypeScript 项目结构
 - TanStack Router 路由骨架与基本页面切换
 - Tailwind CSS 与 shadcn/ui 基础组件可用
 - 开发服务器可启动并可访问
 
 ### 不包含
+
 - 具体业务页面与组件
 - API 集成与数据获取
 - PWA service worker、离线同步与推送通知
