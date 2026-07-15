@@ -14,7 +14,7 @@ LyCo-list/
 │   ├── web/                # React PWA 前端（Vite + React + TS + Tailwind v4 + shadcn/ui）
 │   └── api/                # Lambda 函数
 │       ├── functions/
-│       │   ├── health/     # 占位 health Lambda（ticket 001）
+│       │   ├── health/     # 占位 health Lambda（ticket 001），实际路径 apps/api/src/health/
 │       │   ├── lists/      # lists 域 Lambda：内部路由 GET/POST/PATCH/DELETE
 │       │   ├── tasks/      # tasks 域 Lambda：含子任务、完成、移动、assign 等
 │       │   ├── reminders/  # reminders 域 Lambda
@@ -23,7 +23,7 @@ LyCo-list/
 │       │   ├── notifications/ # notifications 域 Lambda：分配与提醒通知
 │       │   └── cleanup/    # cleanup Lambda：延迟清理软删除数据
 ├── packages/
-│   └── shared/             # 类型、Zod schema、DynamoDB 访问工具、响应包装（ticket 001 初始化 buildResponse）
+│   └── shared/             # 类型、Zod schema、DynamoDB 访问工具、响应包装（ticket 001 初始化 buildResponse 与 errorResponse）
 ├── sst.config.ts           # SST 根配置（ticket 001 初始化 ApiGatewayV2 + StaticSite）
 ├── bruno/                  # API 测试集合（ticket 001 初始化 health 请求，后续带 Cognito token）
 └── ...
@@ -64,7 +64,7 @@ LyCo-list/
 | 测试     | Vitest（覆盖率目标 100%）                                        |
 | 网关     | API Gateway HTTP API v2                                          |
 | 授权     | Cognito User Pool + JWT 授权器                                   |
-| 计算     | AWS Lambda (Node.js 24, TypeScript)                              |
+| 计算     | AWS Lambda (Node.js 22, TypeScript)；待 SST v3 / AWS 区域对 `nodejs24.x` 支持成熟后统一升级至 Node.js 24 |
 | 框架     | 无，原生 Lambda handler                                          |
 | 校验     | Zod                                                              |
 | 数据库   | Amazon DynamoDB（单表设计）                                      |
@@ -123,12 +123,12 @@ LyCo-list/
 用户设备
   │
   ▼
-CloudFront（自定义域名 app.example.com）
+CloudFront（自定义域名 app.jan24th.today）
   │
   ▼
 S3（React SPA 构建产物）
   │
-  │ API 请求：api.example.com
+  │ API 请求：api.jan24th.today
   ▼
 API Gateway HTTP API（v2）
   │
@@ -194,8 +194,10 @@ cleanup Lambda ───────────────► DynamoDB
 
 - 域名托管在 Amazon Route 53。
 - SSL/TLS 证书由 AWS Certificate Manager 管理。
-- 前端自定义域名：`app.jan24th.today`，CNAME 指向 CloudFront 分配。
-- API 自定义域名：`api.jan24th.today`，CNAME 指向 API Gateway 自定义域名。
+- 自定义域名通过环境变量 `BASE_DOMAIN` 配置，SST 根据 stage 自动组合子域名：
+  - `prod` stage：`app.jan24th.today` / `api.jan24th.today`
+  - `acc` stage：`app.acc.jan24th.today` / `api.acc.jan24th.today`
+  - `dev` stage：不绑定自定义域名，使用 SST 自动生成的 URL
 - Cognito Hosted UI 自定义域名：`auth.jan24th.today`（MVP 建议使用）。
 - **已完成：域名 `jan24th.today` 已购买并迁移到 Amazon Route 53**；`www.jan24th.today` 已用于其他网站，本项目使用 `app` / `api` / `auth` 子域名。
 
@@ -632,7 +634,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 - 在仓库根目录 `bruno/` 下以 `.bru` 文件形式存储 API 请求。
 - ticket 001 初始化 Bruno 集合，包含 `development` 和 `production` 环境，以及 `GET /api/health` 占位请求。
 - 后续 ticket 逐步补充每个接口的对应请求，包含 create/update/assign 的示例请求体。
-- 由于业务接口需要 Cognito JWT 授权，集合中需先执行登录步骤，将 Access Token 保存到集合变量中，后续请求自动注入 `Authorization: Bearer <token>`。
+- 由于业务接口需要 Cognito JWT 授权，集合中需先执行登录步骤获取 Access Token。token 通过本地环境变量 `BRUNO_ACCESS_TOKEN` 注入（`.bru` 文件中使用 `{{process.env.BRUNO_ACCESS_TOKEN}}`），避免将敏感凭证提交到版本控制；后续请求自动注入 `Authorization: Bearer <token>`。
 - Bruno 用于开发阶段手动 API 测试，以及团队内共享 API 示例。
 
 ## 前端 UI 结构
@@ -670,9 +672,9 @@ const apiClient = async (path: string, options?: RequestInit) => {
 2. CI 运行 `bunx @biomejs/biome ci`。
 3. CI 运行 `bun run test`（Vitest）。
 4. CI 运行 `tsc --noEmit` 或 `tsgo` 类型检查。
-5. 生产部署 **手动触发** `sst deploy --stage prod`。
+5. 部署 **手动触发**：`sst deploy --stage dev`（本地开发）、`sst deploy --stage acc`（验收环境）、`sst deploy --stage prod`（生产环境）。
 6. SST 创建/更新：CloudFront、S3、API Gateway、Lambda、DynamoDB、Cognito，以及基于 EventBridge Scheduler 的 `sst.aws.CronV2`。
-7. 使用 SST stage `dev` 和 `prod`，不使用 `test` stage。
+7. 使用 SST stage `dev`、`acc` 和 `prod`，不使用 `test` stage。`acc` 与 `prod` 在配置了 `BASE_DOMAIN` 时会自动绑定对应自定义域名。
 
 **CI 工具版本**：GitHub Actions 使用 `oven-sh/setup-bun@v2.2.0`（Node 24 runtime），替代浮动的 `v2` 标签，以避免 Node 20 弃用警告。
 
@@ -680,7 +682,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 ### 健康检查
 
-- 实现 `/api/health` 接口，返回 DynamoDB 连通性状态。
+- 实现 `/api/health` 接口，返回基本健康状态（`ok: true`）、当前 ISO 时间戳和请求 ID；MVP 阶段不检查 DynamoDB 等依赖服务连通性。
 - 用于部署验证和 CloudWatch 基本监控。
 
 ### 日志与监控
@@ -749,7 +751,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 13. 实现前端智能列表（今天、计划、全部、已标记、已完成、**分配给我**）与搜索页面（TDD）。
 14. 实现 `search` 接口与前端对应页面（TDD）。
 15. 配置 PWA：manifest、Service Worker、安装提示。
-16. 配置 CloudFront 和 API Gateway 自定义域名。
+16. 配置 CloudFront 和 API Gateway 自定义域名：prod 与 acc stage 通过 `BASE_DOMAIN` 环境变量自动组合 `app` / `api` 子域名，dev stage 不绑定。
 17. 实现页面启动/恢复前台/可见期间的提醒与通知轮询，Service Worker 只展示通知（TDD）。
 18. 实现 `DELETION_JOB`、cleanup Lambda 与 `sst.aws.CronV2` 定时清理（TDD）。
 19. 更新 Bruno 集合并覆盖所有接口、分页和冲突响应。
