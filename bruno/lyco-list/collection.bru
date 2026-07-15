@@ -1,11 +1,17 @@
-name: lyco-list
-vars {
+meta {
+  name: lyco-list
+  type: collection
+}
+
+vars:pre-request {
   baseUrl: {{baseUrl}}
   accessToken: {{accessToken}}
 }
+
 auth {
   mode: bearer
 }
+
 auth:bearer {
   token: {{accessToken}}
 }
