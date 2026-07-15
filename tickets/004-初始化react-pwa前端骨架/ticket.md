@@ -1,7 +1,7 @@
 ---
 Title: 初始化 React PWA 前端骨架
 ID: 004
-Status: TODO
+Status: ARCHIVED
 Labels: web,frontend
 Estimate: 3
 Depends: 001
@@ -49,3 +49,10 @@ Then 路由器渲染对应的页面
 Given 骨架已初始化
 When 渲染一个 shadcn/ui 组件
 Then 组件以 Tailwind 样式呈现
+
+## 归档记录
+
+- 合并时间：2026-07-15
+- 合并分支：`feat/004-init-react-pwa-skeleton` → `main`
+- 状态：已完成并归档
+- 备注：React PWA 骨架已合并，包含 Vite + React + TypeScript、TanStack Router、Tailwind CSS 与 shadcn/ui 基础配置。
