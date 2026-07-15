@@ -1,7 +1,7 @@
 ---
 Title: 实现 Health 接口
 ID: 006
-Status: TODO
+Status: In Progress
 Labels: api,backend
 Estimate: 1
 Depends: 001
@@ -40,3 +40,9 @@ Then 返回 200 和健康状态
 Given API 正在运行
 When 我在未认证的情况下调用 GET /health
 Then 仍然返回 200
+
+## 计划实施备注
+
+- `/api/health` 在 `sst.config.ts` 中显式配置 `authorizer: "none"`，确保 ticket 002 启用 Cognito JWT 授权器后仍保持公开访问。
+- handler 返回 `ok: true`、`timestamp` 和 `requestId`，便于调用方确认服务运行正常并关联请求。
+- `sst dev` 完整验证需要有效的 AWS 凭证与 `ap-southeast-1` 访问权限；无凭证时无法本地调用 API Gateway。
