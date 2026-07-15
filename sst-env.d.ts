@@ -10,14 +10,6 @@ declare module "sst" {
       "type": "sst.aws.ApiGatewayV2"
       "url": string
     }
-    "USER_POOL_CLIENT_ID": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "USER_POOL_ID": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "UserPool": {
       "id": string
       "type": "sst.aws.CognitoUserPool"
@@ -25,6 +17,11 @@ declare module "sst" {
     "Web": {
       "type": "sst.aws.StaticSite"
       "url": string
+    }
+    "WebClient": {
+      "id": string
+      "secret": string
+      "type": "sst.aws.CognitoUserPoolClient"
     }
   }
 }
