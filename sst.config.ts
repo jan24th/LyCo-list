@@ -14,6 +14,12 @@ export default $config({
     };
   },
   async run() {
+    const isProd = $app.stage === "prod";
+    const domain = {
+      api: isProd ? "api.jan24th.today" : undefined,
+      web: isProd ? "app.jan24th.today" : undefined,
+    };
+
     const userPoolId = new sst.Secret("USER_POOL_ID", "todo-in-ticket-002");
     const userPoolClientId = new sst.Secret(
       "USER_POOL_CLIENT_ID",
@@ -26,6 +32,7 @@ export default $config({
         allowMethods: ["*"],
         allowHeaders: ["content-type", "authorization"],
       },
+      domain: domain.api,
     });
 
     api.route("GET /api/health", {
@@ -44,6 +51,7 @@ export default $config({
         command: "bun run build",
         output: "dist",
       },
+      domain: domain.web,
       environment: {
         VITE_API_URL: api.url,
         VITE_USER_POOL_ID: userPoolId.value,
