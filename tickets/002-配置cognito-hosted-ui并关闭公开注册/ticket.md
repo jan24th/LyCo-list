@@ -1,7 +1,7 @@
 ---
 Title: 配置 Cognito Hosted UI 并关闭公开注册
 ID: 002
-Status: TODO
+Status: Done
 Labels: infra,auth
 Estimate: 3
 Depends: 001
@@ -29,6 +29,14 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - 用户资料管理业务逻辑
 - API 授权中间件与保护路由
 - 业务 API 接口
+
+## 重要实现说明
+
+- SST v3.19.3 的 `sst.aws.CognitoUserPool` 组件未暴露 `domain` 参数，因此 Cognito User Pool Domain 通过 Pulumi AWS 原生资源 `aws.cognito.UserPoolDomain` 创建。
+- `sst.aws.CognitoUserPoolClient` 未暴露 `logoutUrls`，通过 `transform.client` 传入。
+- 为避免 `web` 与 `userPoolClient` 之间的循环依赖/前向引用，`callbackUrls` 直接基于 stage 与 `BASE_DOMAIN` 推导，不再依赖 `web.url`。
+- 所有 stage 均使用 Cognito prefix 域名（`{app}-{stage}.auth.ap-southeast-1.amazoncognito.com`），前端 acc/prod 仍保留 `app.{stagePrefix}jan24th.today` 自定义域名。
+- `.env.acc` / `.env.prod` 只需配置 `BASE_DOMAIN=jan24th.today`，不再需要 `ROUTE_53_ZONE_ID`。
 
 ## 验收标准
 

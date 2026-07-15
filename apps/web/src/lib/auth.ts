@@ -17,6 +17,22 @@ export function buildRedirectUrls(origin: string): {
   };
 }
 
+export function normalizeOAuthDomain(domain: string): string {
+  return domain.replace(/^https?:\/\//, "");
+}
+
+export function validateAuthConfig(config: AuthConfig): void {
+  if (!config.userPoolId) {
+    throw new Error("VITE_USER_POOL_ID is not configured");
+  }
+  if (!config.userPoolClientId) {
+    throw new Error("VITE_USER_POOL_CLIENT_ID is not configured");
+  }
+  if (!config.oauthDomain) {
+    throw new Error("VITE_COGNITO_DOMAIN is not configured");
+  }
+}
+
 export function buildAmplifyConfig(
   config: AuthConfig,
   origin: string,
@@ -30,7 +46,7 @@ export function buildAmplifyConfig(
         userPoolClientId: config.userPoolClientId,
         loginWith: {
           oauth: {
-            domain: config.oauthDomain,
+            domain: normalizeOAuthDomain(config.oauthDomain),
             scopes: ["openid", "email", "profile"],
             redirectSignIn,
             redirectSignOut,
@@ -49,5 +65,6 @@ export function configureAmplify(
   if (!origin) {
     throw new Error("Cannot configure Amplify without an origin");
   }
+  validateAuthConfig(config);
   Amplify.configure(buildAmplifyConfig(config, origin));
 }

@@ -28,10 +28,8 @@ export default $config({
           : undefined,
     };
 
-    const authDomain =
-      isCustomDomainStage && baseDomain
-        ? `auth.${stagePrefix}${baseDomain}`
-        : undefined;
+    const authDomainPrefix = `${$app.name}-${$app.stage}`;
+    const cognitoDomainUrl = `https://${authDomainPrefix}.auth.ap-southeast-1.amazoncognito.com`;
 
     const corsOrigins = ((): string[] => {
       switch ($app.stage) {
@@ -53,9 +51,11 @@ export default $config({
           },
         },
       },
-      domain: authDomain ?? {
-        prefix: `${$app.name}-${$app.stage}`,
-      },
+    });
+
+    new aws.cognito.UserPoolDomain("UserPoolDomain", {
+      domain: authDomainPrefix,
+      userPoolId: userPool.id,
     });
 
     const api = new sst.aws.ApiGatewayV2("Api", {
@@ -67,17 +67,20 @@ export default $config({
       domain: domain.api,
     });
 
-    // biome-ignore lint/correctness/noInvalidUseBeforeDeclaration: Pulumi Output forward reference
-    const callbackUrls = web.url.apply((url) => {
-      const normalized = url.endsWith("/") ? url : `${url}/`;
-      return $app.stage === "dev"
-        ? [normalized, "http://localhost:5173/"]
-        : [normalized];
-    });
+    const callbackUrls = ((): string[] => {
+      if (isCustomDomainStage && baseDomain) {
+        return [`https://app.${stagePrefix}${baseDomain}/`];
+      }
+      return ["http://localhost:5173/"];
+    })();
 
     const userPoolClient = userPool.addClient("WebClient", {
       callbackUrls,
-      logoutUrls: callbackUrls,
+      transform: {
+        client: {
+          logoutUrls: callbackUrls,
+        },
+      },
     });
 
     const web = new sst.aws.StaticSite("Web", {
@@ -91,7 +94,7 @@ export default $config({
         VITE_API_URL: api.url,
         VITE_USER_POOL_ID: userPool.id,
         VITE_USER_POOL_CLIENT_ID: userPoolClient.id,
-        VITE_COGNITO_DOMAIN: userPool.domainUrl,
+        VITE_COGNITO_DOMAIN: cognitoDomainUrl,
       },
     });
 
@@ -109,7 +112,7 @@ export default $config({
       web: web.url,
       userPool: userPool.id,
       userPoolClient: userPoolClient.id,
-      authDomain: userPool.domainUrl,
+      authDomain: cognitoDomainUrl,
     };
   },
 });

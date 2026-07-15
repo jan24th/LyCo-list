@@ -3,6 +3,8 @@ import {
   buildAmplifyConfig,
   buildRedirectUrls,
   configureAmplify,
+  normalizeOAuthDomain,
+  validateAuthConfig,
 } from "./auth";
 
 const { mockConfigure } = vi.hoisted(() => ({ mockConfigure: vi.fn() }));
@@ -33,6 +35,24 @@ describe("buildRedirectUrls", () => {
   });
 });
 
+describe("normalizeOAuthDomain", () => {
+  it("strips https:// prefix", () => {
+    expect(normalizeOAuthDomain("https://auth.example.com")).toBe(
+      "auth.example.com",
+    );
+  });
+
+  it("strips http:// prefix", () => {
+    expect(normalizeOAuthDomain("http://auth.example.com")).toBe(
+      "auth.example.com",
+    );
+  });
+
+  it("leaves bare domain unchanged", () => {
+    expect(normalizeOAuthDomain("auth.example.com")).toBe("auth.example.com");
+  });
+});
+
 describe("buildAmplifyConfig", () => {
   it("returns valid Cognito OAuth configuration", () => {
     const config = buildAmplifyConfig(baseConfig, "https://app.example.com");
@@ -54,6 +74,50 @@ describe("buildAmplifyConfig", () => {
         },
       },
     });
+  });
+
+  it("normalizes domain when it includes protocol", () => {
+    const config = buildAmplifyConfig(
+      { ...baseConfig, oauthDomain: "https://auth.example.com" },
+      "https://app.example.com",
+    );
+
+    const typedConfig = config as {
+      Auth: {
+        Cognito: {
+          loginWith: {
+            oauth: { domain: string };
+          };
+        };
+      };
+    };
+    expect(typedConfig.Auth.Cognito.loginWith.oauth.domain).toBe(
+      "auth.example.com",
+    );
+  });
+});
+
+describe("validateAuthConfig", () => {
+  it("does not throw for valid config", () => {
+    expect(() => validateAuthConfig(baseConfig)).not.toThrow();
+  });
+
+  it("throws when userPoolId is empty", () => {
+    expect(() => validateAuthConfig({ ...baseConfig, userPoolId: "" })).toThrow(
+      "VITE_USER_POOL_ID is not configured",
+    );
+  });
+
+  it("throws when userPoolClientId is empty", () => {
+    expect(() =>
+      validateAuthConfig({ ...baseConfig, userPoolClientId: "" }),
+    ).toThrow("VITE_USER_POOL_CLIENT_ID is not configured");
+  });
+
+  it("throws when oauthDomain is empty", () => {
+    expect(() =>
+      validateAuthConfig({ ...baseConfig, oauthDomain: "" }),
+    ).toThrow("VITE_COGNITO_DOMAIN is not configured");
   });
 });
 
