@@ -1,7 +1,7 @@
 ---
 Title: 按 stage 收紧 API Gateway CORS
 ID: 001B
-Status: DONE
+Status: Archived
 Labels: infra,cors
 Estimate: 1
 Depends: 001,001A
@@ -19,6 +19,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ## 范围
 
 ### 包含
+
 - 在 `sst.config.ts` 中按 `dev` / `acc` / `prod` stage 配置 `sst.aws.ApiGatewayV2` 的 `cors.allowOrigins`。
 - `dev` stage 允许所有 origin，便于本地开发。
 - `acc` stage 只允许 `https://app.acc.jan24th.today`。
@@ -26,6 +27,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - 同步更新 design 文档 CORS 章节，保持设计权威来源一致。
 
 ### 不包含
+
 - 添加 WAF 或更复杂的来源校验逻辑。
 - 修改前端代码或 API 路由逻辑。
 - 自定义 Cognito Hosted UI 的 CORS 配置。
