@@ -1,7 +1,7 @@
 ---
 Title: 按 stage 收紧 API Gateway CORS
 ID: 001B
-Status: TODO
+Status: DONE
 Labels: infra,cors
 Estimate: 1
 Depends: 001,001A
