@@ -72,5 +72,6 @@ Then 无格式化或检查错误
   - `dev` → `"*"`
   - `acc` → `"https://app.acc.jan24th.today"`
   - `prod` → `"https://app.jan24th.today"`
+  - 其他未列出的 stage 默认回退到 `dev` 配置（`"*"`），便于本地和临时环境。
 - 如果后续增加更多 stage（如 `staging`），需要同步扩展映射表。
 - 本 ticket 完成后，design 文档中“CORS”章节应与此实现保持一致。
