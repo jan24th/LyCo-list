@@ -50,12 +50,14 @@ Add immediately inside `async run() {`:
 ```typescript
 const isProd = $app.stage === "prod";
 const domain = {
-  api: isProd ? "api.jan24th.today" : undefined,
-  web: isProd ? "app.jan24th.today" : undefined,
+  api: isProd ? process.env.API_DOMAIN : undefined,
+  web: isProd ? process.env.WEB_DOMAIN : undefined,
 };
 ```
 
 > SST v3 exposes the current stage through the global `$app.stage` variable inside `run()`. Do not use `input.stage` here; `input` is only available in the `app(input)` callback.
+>
+> Domain values are read from environment variables so the same config can be used across stages without hardcoding production hostnames. Create `.env` or `.env.prod` from `.env.example` and set `API_DOMAIN` / `WEB_DOMAIN` before deploying to prod.
 
 - [ ] **Step 3: 为 `ApiGatewayV2` 添加 `domain` 配置**
 
@@ -361,3 +363,4 @@ If custom domain deployment causes issues in prod:
 1. Domain `jan24th.today` and its hosted zone exist in the same AWS account and region where `sst deploy --stage prod` runs.
 2. The AWS profile used by `sst deploy` has permissions to create/modify Route 53 records and ACM certificates.
 3. Ticket 001's base infrastructure (ApiGatewayV2, StaticSite, placeholder Cognito secrets) already deploys successfully before adding custom domains.
+4. Environment variables `API_DOMAIN` and `WEB_DOMAIN` are set in `.env` or `.env.prod` before deploying to prod (see `.env.example`).
