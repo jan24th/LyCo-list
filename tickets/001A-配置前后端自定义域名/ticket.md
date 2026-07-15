@@ -2,6 +2,7 @@
 Title: 配置前后端自定义域名
 ID: 001A
 Status: TODO
+Cycle: 1
 Labels: infra,domain
 Estimate: 3
 Depends: 001
@@ -55,7 +56,7 @@ And 自动生成指向 API Gateway 自定义域名的 `api.jan24th.today` 记录
 
 ### 场景 4：本地开发与生产配置区分
 
-Given `sst.config.ts` 中按 `input.stage` 区分环境
+Given `sst.config.ts` 中按当前 stage 区分环境（SST v3 `run()` 内使用 `$app.stage`）
 When `stage === "dev"` 时
 Then 不强制绑定 `app.jan24th.today` / `api.jan24th.today`，避免开发环境覆盖生产域名
 When `stage === "prod"` 时
