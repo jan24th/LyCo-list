@@ -14,11 +14,18 @@ export default $config({
     };
   },
   async run() {
-    const isProd = $app.stage === "prod";
     const baseDomain = process.env.BASE_DOMAIN;
+    const isCustomDomainStage = $app.stage === "prod" || $app.stage === "acc";
+    const stagePrefix = $app.stage === "prod" ? "" : `${$app.stage}.`;
     const domain = {
-      api: isProd && baseDomain ? `api.${baseDomain}` : undefined,
-      web: isProd && baseDomain ? `app.${baseDomain}` : undefined,
+      api:
+        isCustomDomainStage && baseDomain
+          ? `api.${stagePrefix}${baseDomain}`
+          : undefined,
+      web:
+        isCustomDomainStage && baseDomain
+          ? `app.${stagePrefix}${baseDomain}`
+          : undefined,
     };
 
     const userPoolId = new sst.Secret("USER_POOL_ID", "todo-in-ticket-002");
