@@ -372,3 +372,4 @@ If custom domain deployment causes issues in prod:
 2. The AWS profile used by `sst deploy` has permissions to create/modify Route 53 records and ACM certificates.
 3. Ticket 001's base infrastructure (ApiGatewayV2, StaticSite, placeholder Cognito secrets) already deploys successfully before adding custom domains.
 4. Environment variable `BASE_DOMAIN` is set in `.env`, `.env.prod`, or `.env.acc` before deploying to a stage that needs custom domains (see `.env.example`).
+5. When running authenticated Bruno requests, the user has set `BRUNO_ACCESS_TOKEN` in their local environment or `.env` file. The token is read via `{{process.env.BRUNO_ACCESS_TOKEN}}` and is not stored in the committed `.bru` files.
