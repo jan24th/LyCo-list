@@ -14,6 +14,20 @@ export default $config({
     };
   },
   async run() {
+    const baseDomain = process.env.BASE_DOMAIN;
+    const isCustomDomainStage = $app.stage === "prod" || $app.stage === "acc";
+    const stagePrefix = $app.stage === "prod" ? "" : `${$app.stage}.`;
+    const domain = {
+      api:
+        isCustomDomainStage && baseDomain
+          ? `api.${stagePrefix}${baseDomain}`
+          : undefined,
+      web:
+        isCustomDomainStage && baseDomain
+          ? `app.${stagePrefix}${baseDomain}`
+          : undefined,
+    };
+
     const userPoolId = new sst.Secret("USER_POOL_ID", "todo-in-ticket-002");
     const userPoolClientId = new sst.Secret(
       "USER_POOL_CLIENT_ID",
@@ -26,6 +40,7 @@ export default $config({
         allowMethods: ["*"],
         allowHeaders: ["content-type", "authorization"],
       },
+      domain: domain.api,
     });
 
     api.route("GET /api/health", {
@@ -44,6 +59,7 @@ export default $config({
         command: "bun run build",
         output: "dist",
       },
+      domain: domain.web,
       environment: {
         VITE_API_URL: api.url,
         VITE_USER_POOL_ID: userPoolId.value,
