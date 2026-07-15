@@ -32,14 +32,10 @@ export default $config({
     const cognitoDomainUrl = `https://${authDomainPrefix}.auth.ap-southeast-1.amazoncognito.com`;
 
     const corsOrigins = ((): string[] => {
-      switch ($app.stage) {
-        case "acc":
-          return ["https://app.acc.jan24th.today"];
-        case "prod":
-          return ["https://app.jan24th.today"];
-        default:
-          return ["*"];
+      if (isCustomDomainStage && baseDomain) {
+        return [`https://app.${stagePrefix}${baseDomain}`];
       }
+      return ["*"];
     })();
 
     const userPool = new sst.aws.CognitoUserPool("UserPool", {
