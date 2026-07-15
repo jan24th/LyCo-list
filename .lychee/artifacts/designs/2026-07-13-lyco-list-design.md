@@ -198,8 +198,8 @@ cleanup Lambda ───────────────► DynamoDB
   - `prod` stage：`app.jan24th.today` / `api.jan24th.today`
   - `acc` stage：`app.acc.jan24th.today` / `api.acc.jan24th.today`
   - `dev` stage：不绑定自定义域名，使用 SST 自动生成的 URL
-- Cognito Hosted UI 自定义域名：`auth.jan24th.today`（MVP 建议使用）。
-- **已完成：域名 `jan24th.today` 已购买并迁移到 Amazon Route 53**；`www.jan24th.today` 已用于其他网站，本项目使用 `app` / `api` / `auth` 子域名。
+- Cognito Hosted UI 使用 Cognito prefix 域名：`{app}-{stage}.auth.ap-southeast-1.amazoncognito.com`。MVP 不配置 Cognito 自定义域名，因为当前 SST v3 的 `CognitoUserPool` 组件未稳定支持该能力；Phase 2 切换为自建登录 UI 后，Hosted UI 域名不再影响用户体验。
+- **已完成：域名 `jan24th.today` 已购买并迁移到 Amazon Route 53**；`www.jan24th.today` 已用于其他网站，本项目使用 `app` / `api` 子域名。
 
 ### API 限流
 
@@ -210,7 +210,7 @@ cleanup Lambda ───────────────► DynamoDB
 
 ### MVP：Cognito Hosted UI
 
-1. 用户点击登录/注册，前端跳转至 Cognito Hosted UI（`auth.jan24th.today`）。
+1. 用户点击登录/注册，前端跳转至 Cognito Hosted UI（`{app}-{stage}.auth.ap-southeast-1.amazoncognito.com`）。
 2. 登录成功后，Cognito 通过回调 URL 重定向回前端，URL 中包含 authorization code。
 3. 前端用 code 换取 Access Token、ID Token、Refresh Token。
 4. 后续 API 请求在 `Authorization` header 中携带 `Bearer <Access Token>`。
