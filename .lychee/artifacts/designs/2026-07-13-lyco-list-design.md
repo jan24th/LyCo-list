@@ -194,10 +194,10 @@ cleanup Lambda ───────────────► DynamoDB
 
 - 域名托管在 Amazon Route 53。
 - SSL/TLS 证书由 AWS Certificate Manager 管理。
-- 前端自定义域名：`app.example.com`，CNAME 指向 CloudFront 分配。
-- API 自定义域名：`api.example.com`，CNAME 指向 API Gateway 自定义域名。
-- Cognito Hosted UI 自定义域名：`auth.example.com`（MVP 建议使用）。
-- **域名需要先行购买并迁移到 Route 53**，这是部署前的外部依赖。
+- 前端自定义域名：`app.jan24th.today`，CNAME 指向 CloudFront 分配。
+- API 自定义域名：`api.jan24th.today`，CNAME 指向 API Gateway 自定义域名。
+- Cognito Hosted UI 自定义域名：`auth.jan24th.today`（MVP 建议使用）。
+- **已完成：域名 `jan24th.today` 已购买并迁移到 Amazon Route 53**；`www.jan24th.today` 已用于其他网站，本项目使用 `app` / `api` / `auth` 子域名。
 
 ### API 限流
 
@@ -208,7 +208,7 @@ cleanup Lambda ───────────────► DynamoDB
 
 ### MVP：Cognito Hosted UI
 
-1. 用户点击登录/注册，前端跳转至 Cognito Hosted UI（`auth.example.com`）。
+1. 用户点击登录/注册，前端跳转至 Cognito Hosted UI（`auth.jan24th.today`）。
 2. 登录成功后，Cognito 通过回调 URL 重定向回前端，URL 中包含 authorization code。
 3. 前端用 code 换取 Access Token、ID Token、Refresh Token。
 4. 后续 API 请求在 `Authorization` header 中携带 `Bearer <Access Token>`。
@@ -652,7 +652,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 1. 使用 SST `StaticSite` 组件部署 React 应用。
 2. 构建产物上传到 S3。
-3. CloudFront 作为 CDN 和 HTTPS 入口，绑定 `app.example.com`。
+3. CloudFront 作为 CDN 和 HTTPS 入口，绑定 `app.jan24th.today`。
 4. 前端环境变量通过 SST `StaticSite` 的 `environment` 配置在构建时注入。
 5. `VITE_API_URL` 直接引用 `api.url`；`VITE_USER_POOL_ID` 和 `VITE_USER_POOL_CLIENT_ID` 在 ticket 001 中使用 `sst.Secret` 占位（placeholder 值 `todo-in-ticket-002`），ticket 002 部署 Cognito 后替换为真实 ID。
 6. Vite 通过 `import.meta.env` 读取 `VITE_API_URL`、`VITE_USER_POOL_ID`、`VITE_USER_POOL_CLIENT_ID` 等变量。
@@ -699,7 +699,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 ### CORS
 
 - `dev` stage：API Gateway CORS 允许所有 origin（便于本地开发）。
-- `prod` stage：只允许完整 origin `https://app.example.com`。
+- `prod` stage：只允许完整 origin `https://app.jan24th.today`。
 
 ### Schema 变更
 
@@ -799,7 +799,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 ## 成功标准
 
-- 前端可通过 `app.example.com` 访问，API 可通过 `api.example.com` 访问。
+- 前端可通过 `app.jan24th.today` 访问，API 可通过 `api.jan24th.today` 访问。
 - 用户可通过 Cognito Hosted UI 登录，但只有管理员手动创建的用户才能登录。
 - 所有接口返回正确 JSON，并在 Bruno 集合中有对应请求。
 - 所有登录用户共享同一组列表和任务数据。
@@ -814,4 +814,4 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 ## 待解决决策
 
-1. 域名购买与 Route 53 迁移：需要先行完成（由项目负责人自行处理）。
+1. ~~域名购买与 Route 53 迁移：需要先行完成（由项目负责人自行处理）。~~ ✅ 已完成：域名 `jan24th.today` 已购买并迁移到 Amazon Route 53。

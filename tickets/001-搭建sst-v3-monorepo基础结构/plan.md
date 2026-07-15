@@ -1092,7 +1092,7 @@ vars {
 
 ```
 vars {
-  baseUrl: https://api.example.com
+  baseUrl: https://api.jan24th.today
   accessToken: 
 }
 ```
