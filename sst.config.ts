@@ -28,11 +28,8 @@ export default $config({
           : undefined,
     };
 
-    const userPoolId = new sst.Secret("USER_POOL_ID", "todo-in-ticket-002");
-    const userPoolClientId = new sst.Secret(
-      "USER_POOL_CLIENT_ID",
-      "todo-in-ticket-002",
-    );
+    const authDomainPrefix = `${$app.name}-${$app.stage}`;
+    const cognitoDomainUrl = `https://${authDomainPrefix}.auth.ap-southeast-1.amazoncognito.com`;
 
     const corsOrigins = ((): string[] => {
       switch ($app.stage) {
@@ -45,6 +42,22 @@ export default $config({
       }
     })();
 
+    const userPool = new sst.aws.CognitoUserPool("UserPool", {
+      usernames: ["email"],
+      transform: {
+        userPool: {
+          adminCreateUserConfig: {
+            allowAdminCreateUserOnly: true,
+          },
+        },
+      },
+    });
+
+    new aws.cognito.UserPoolDomain("UserPoolDomain", {
+      domain: authDomainPrefix,
+      userPoolId: userPool.id,
+    });
+
     const api = new sst.aws.ApiGatewayV2("Api", {
       cors: {
         allowOrigins: corsOrigins,
@@ -54,12 +67,19 @@ export default $config({
       domain: domain.api,
     });
 
-    api.route("GET /api/health", {
-      handler: "apps/api/src/health/index.handler",
-      runtime: "nodejs22.x",
-      environment: {
-        USER_POOL_ID: userPoolId.value,
-        USER_POOL_CLIENT_ID: userPoolClientId.value,
+    const callbackUrls = ((): string[] => {
+      if (isCustomDomainStage && baseDomain) {
+        return [`https://app.${stagePrefix}${baseDomain}/`];
+      }
+      return ["http://localhost:5173/"];
+    })();
+
+    const userPoolClient = userPool.addClient("WebClient", {
+      callbackUrls,
+      transform: {
+        client: {
+          logoutUrls: callbackUrls,
+        },
       },
     });
 
@@ -72,14 +92,27 @@ export default $config({
       domain: domain.web,
       environment: {
         VITE_API_URL: api.url,
-        VITE_USER_POOL_ID: userPoolId.value,
-        VITE_USER_POOL_CLIENT_ID: userPoolClientId.value,
+        VITE_USER_POOL_ID: userPool.id,
+        VITE_USER_POOL_CLIENT_ID: userPoolClient.id,
+        VITE_COGNITO_DOMAIN: cognitoDomainUrl,
+      },
+    });
+
+    api.route("GET /api/health", {
+      handler: "apps/api/src/health/index.handler",
+      runtime: "nodejs22.x",
+      environment: {
+        USER_POOL_ID: userPool.id,
+        USER_POOL_CLIENT_ID: userPoolClient.id,
       },
     });
 
     return {
       api: api.url,
       web: web.url,
+      userPool: userPool.id,
+      userPoolClient: userPoolClient.id,
+      authDomain: cognitoDomainUrl,
     };
   },
 });

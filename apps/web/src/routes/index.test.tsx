@@ -7,6 +7,14 @@ import {
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+const { mockGetCurrentUser } = vi.hoisted(() => ({
+  mockGetCurrentUser: vi.fn(),
+}));
+
+vi.mock("aws-amplify/auth", () => ({
+  getCurrentUser: mockGetCurrentUser,
+}));
+
 window.scrollTo = vi.fn();
 
 async function renderRouter(initialUrl: string) {
@@ -17,15 +25,17 @@ async function renderRouter(initialUrl: string) {
 }
 
 describe("Home route", () => {
-  it("renders the home page content", async () => {
+  it("shows login button when user is not logged in", async () => {
+    mockGetCurrentUser.mockRejectedValue(new Error("not signed in"));
     await renderRouter("/");
-    expect(screen.getByText("今天")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "关于" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "登录" }),
+    ).toBeInTheDocument();
   });
 
-  it("navigates to about page", async () => {
+  it("shows user id when already logged in", async () => {
+    mockGetCurrentUser.mockResolvedValue({ userId: "user-456" });
     await renderRouter("/");
-    await screen.getByRole("button", { name: "关于" }).click();
-    expect(await screen.findByText("关于 LyCo-list")).toBeInTheDocument();
+    expect(await screen.findByText(/user-456/)).toBeInTheDocument();
   });
 });
