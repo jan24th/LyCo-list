@@ -1,8 +1,15 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { configureAmplify } from "./lib/auth";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
+
+configureAmplify({
+  userPoolId: import.meta.env.VITE_USER_POOL_ID,
+  userPoolClientId: import.meta.env.VITE_USER_POOL_CLIENT_ID,
+  oauthDomain: import.meta.env.VITE_COGNITO_DOMAIN,
+});
 
 const router = createRouter({ routeTree });
 
