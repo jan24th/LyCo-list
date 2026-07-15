@@ -34,9 +34,20 @@ export default $config({
       "todo-in-ticket-002",
     );
 
+    const corsOrigins = ((): string[] => {
+      switch ($app.stage) {
+        case "acc":
+          return ["https://app.acc.jan24th.today"];
+        case "prod":
+          return ["https://app.jan24th.today"];
+        default:
+          return ["*"];
+      }
+    })();
+
     const api = new sst.aws.ApiGatewayV2("Api", {
       cors: {
-        allowOrigins: ["*"],
+        allowOrigins: corsOrigins,
         allowMethods: ["*"],
         allowHeaders: ["content-type", "authorization"],
       },
