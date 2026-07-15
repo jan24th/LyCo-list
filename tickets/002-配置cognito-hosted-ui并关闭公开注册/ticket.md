@@ -22,7 +22,8 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - Cognito User Pool 与 User Pool Client 配置
 - Hosted UI 登录/回调流程
 - 关闭公开注册，仅允许管理员邀请或预创建用户
-- 向 `apps/web` 暴露 `VITE_USER_POOL_ID` 与 `VITE_USER_POOL_CLIENT_ID`
+- 向 `apps/web` 暴露 `VITE_USER_POOL_ID`、`VITE_USER_POOL_CLIENT_ID` 与 `VITE_COGNITO_DOMAIN`
+- 前端最小登录入口（登录按钮）与回调页，用于验证 token 可获取；token 刷新与 401 重定向由 ticket 005 负责
 
 ### 不包含
 - 用户资料管理业务逻辑
