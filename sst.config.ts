@@ -57,7 +57,6 @@ export default $config({
     api.route("GET /api/health", {
       handler: "apps/api/src/health/index.handler",
       runtime: "nodejs22.x",
-      authorizer: "none",
       environment: {
         USER_POOL_ID: userPoolId.value,
         USER_POOL_CLIENT_ID: userPoolClientId.value,
