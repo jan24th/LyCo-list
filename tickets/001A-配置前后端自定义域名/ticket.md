@@ -1,7 +1,7 @@
 ---
 Title: 配置前后端自定义域名
 ID: 001A
-Status: DONE
+Status: Archived
 Cycle: 1
 Labels: infra,domain
 Estimate: 3
