@@ -16,8 +16,8 @@ export default $config({
   async run() {
     const isProd = $app.stage === "prod";
     const domain = {
-      api: isProd ? "api.jan24th.today" : undefined,
-      web: isProd ? "app.jan24th.today" : undefined,
+      api: isProd ? process.env.API_DOMAIN : undefined,
+      web: isProd ? process.env.WEB_DOMAIN : undefined,
     };
 
     const userPoolId = new sst.Secret("USER_POOL_ID", "todo-in-ticket-002");
