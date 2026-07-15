@@ -56,4 +56,4 @@ Then 注册功能被关闭或需要管理员邀请
 
 Given 用户成功完成认证
 When Cognito 重定向回应用
-Then 应用接收到有效的 token
+Then 应用通过 Amplify 获取有效用户会话并识别当前用户
