@@ -700,8 +700,12 @@ const apiClient = async (path: string, options?: RequestInit) => {
 
 ### CORS
 
-- `dev` stage：API Gateway CORS 允许所有 origin（便于本地开发）。
-- `prod` stage：只允许完整 origin `https://app.jan24th.today`。
+API Gateway HTTP API 的 CORS 按 `$app.stage` 配置：
+
+- `dev` stage：`allowOrigins: ["*"]`，允许所有 origin（便于本地开发）。
+- `acc` stage：`allowOrigins: ["https://app.acc.jan24th.today"]`，只允许验收环境前端。
+- `prod` stage：`allowOrigins: ["https://app.jan24th.today"]`，只允许生产环境前端。
+- 其他未列出的 stage 默认回退到 `dev` 配置，即 `allowOrigins: ["*"]`。
 
 ### Schema 变更
 
