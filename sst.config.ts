@@ -65,9 +65,9 @@ export default $config({
 
     const callbackUrls = ((): string[] => {
       if (isCustomDomainStage && baseDomain) {
-        return [`https://app.${stagePrefix}${baseDomain}/`];
+        return [`https://app.${stagePrefix}${baseDomain}/callback`];
       }
-      return ["http://localhost:5173/"];
+      return ["http://localhost:5173/callback"];
     })();
 
     const userPoolClient = userPool.addClient("WebClient", {

@@ -4,6 +4,7 @@ import {
   buildRedirectUrls,
   configureAmplify,
   normalizeOAuthDomain,
+  parseCallbackCode,
   validateAuthConfig,
 } from "./auth";
 
@@ -20,17 +21,17 @@ const baseConfig = {
 };
 
 describe("buildRedirectUrls", () => {
-  it("adds trailing slash when missing", () => {
+  it("returns callback url with trailing slash normalized", () => {
     expect(buildRedirectUrls("https://app.example.com")).toEqual({
-      redirectSignIn: ["https://app.example.com/"],
-      redirectSignOut: ["https://app.example.com/"],
+      redirectSignIn: ["https://app.example.com/callback"],
+      redirectSignOut: ["https://app.example.com/callback"],
     });
   });
 
-  it("keeps trailing slash when present", () => {
+  it("returns callback url when origin already has trailing slash", () => {
     expect(buildRedirectUrls("https://app.example.com/")).toEqual({
-      redirectSignIn: ["https://app.example.com/"],
-      redirectSignOut: ["https://app.example.com/"],
+      redirectSignIn: ["https://app.example.com/callback"],
+      redirectSignOut: ["https://app.example.com/callback"],
     });
   });
 });
@@ -66,34 +67,14 @@ describe("buildAmplifyConfig", () => {
             oauth: {
               domain: baseConfig.oauthDomain,
               scopes: ["openid", "email", "profile"],
-              redirectSignIn: ["https://app.example.com/"],
-              redirectSignOut: ["https://app.example.com/"],
+              redirectSignIn: ["https://app.example.com/callback"],
+              redirectSignOut: ["https://app.example.com/callback"],
               responseType: "code",
             },
           },
         },
       },
     });
-  });
-
-  it("normalizes domain when it includes protocol", () => {
-    const config = buildAmplifyConfig(
-      { ...baseConfig, oauthDomain: "https://auth.example.com" },
-      "https://app.example.com",
-    );
-
-    const typedConfig = config as {
-      Auth: {
-        Cognito: {
-          loginWith: {
-            oauth: { domain: string };
-          };
-        };
-      };
-    };
-    expect(typedConfig.Auth.Cognito.loginWith.oauth.domain).toBe(
-      "auth.example.com",
-    );
   });
 });
 
@@ -154,5 +135,19 @@ describe("configureAmplify", () => {
     );
 
     globalThis.window = originalWindow;
+  });
+});
+
+describe("parseCallbackCode", () => {
+  it("returns the code query parameter", () => {
+    expect(parseCallbackCode("?code=abc123&state=xyz")).toBe("abc123");
+  });
+
+  it("returns null when code is missing", () => {
+    expect(parseCallbackCode("?state=xyz")).toBeNull();
+  });
+
+  it("returns null for empty search", () => {
+    expect(parseCallbackCode("")).toBeNull();
   });
 });

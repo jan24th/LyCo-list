@@ -11,14 +11,19 @@ export function buildRedirectUrls(origin: string): {
   redirectSignOut: string[];
 } {
   const normalizedOrigin = origin.endsWith("/") ? origin : `${origin}/`;
+  const callbackUrl = `${normalizedOrigin}callback`;
   return {
-    redirectSignIn: [normalizedOrigin],
-    redirectSignOut: [normalizedOrigin],
+    redirectSignIn: [callbackUrl],
+    redirectSignOut: [callbackUrl],
   };
 }
 
 export function normalizeOAuthDomain(domain: string): string {
   return domain.replace(/^https?:\/\//, "");
+}
+
+export function parseCallbackCode(search: string): string | null {
+  return new URLSearchParams(search).get("code");
 }
 
 export function validateAuthConfig(config: AuthConfig): void {
