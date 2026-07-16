@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cognitoSub,
   formatOrderKey,
   ianaTimeZone,
   localDate,
@@ -38,5 +39,15 @@ describe("common helpers", () => {
   it("formats orderKey", () => {
     expect(formatOrderKey(1)).toBe("1.000000000");
     expect(formatOrderKey(1.5)).toBe("1.500000000");
+  });
+
+  it("validates cognitoSub format", () => {
+    expect(
+      cognitoSub.safeParse("d92a155c-70a1-70cf-8bd5-0dd5d4772093").success,
+    ).toBe(true);
+    expect(
+      cognitoSub.safeParse("f9da35bc-a051-7055-42ec-9c75719b9a9f").success,
+    ).toBe(true);
+    expect(cognitoSub.safeParse("not-a-valid-sub").success).toBe(false);
   });
 });

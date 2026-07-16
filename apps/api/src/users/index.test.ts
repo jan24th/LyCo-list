@@ -90,15 +90,15 @@ describe("users assignees handler", () => {
         {
           Username: "alice",
           Attributes: [
-            { Name: "sub", Value: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11" },
-            { Name: "name", Value: "Alice" },
+            { Name: "sub", Value: "d92a155c-70a1-70cf-8bd5-0dd5d4772093" },
+            { Name: "name", Value: "志辉" },
           ],
         },
         {
           Username: "bob",
           Attributes: [
-            { Name: "sub", Value: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22" },
-            { Name: "name", Value: "Bob" },
+            { Name: "sub", Value: "f9da35bc-a051-7055-42ec-9c75719b9a9f" },
+            { Name: "name", Value: "LZH" },
           ],
         },
       ],
@@ -109,8 +109,8 @@ describe("users assignees handler", () => {
 
     expect(result.statusCode).toBe(200);
     expect(body.items).toEqual([
-      { id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", name: "Alice" },
-      { id: "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22", name: "Bob" },
+      { id: "d92a155c-70a1-70cf-8bd5-0dd5d4772093", name: "志辉" },
+      { id: "f9da35bc-a051-7055-42ec-9c75719b9a9f", name: "LZH" },
     ]);
     expect(body.nextCursor).toBeUndefined();
   });
