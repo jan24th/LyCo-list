@@ -1,51 +1,89 @@
-import { routeTree } from "@/routeTree.gen";
-import {
-  RouterProvider,
-  createMemoryHistory,
-  createRouter,
-} from "@tanstack/react-router";
-import { render, screen } from "@testing-library/react";
+import { CallbackPage } from "@/routes/callback";
+import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-const { mockGetCurrentUser } = vi.hoisted(() => ({
-  mockGetCurrentUser: vi.fn(),
+const { mockNavigate, mockUseLocation } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
+  mockUseLocation: vi.fn(),
+}));
+
+vi.mock("@tanstack/react-router", async () => {
+  const actual =
+    await vi.importActual<typeof import("@tanstack/react-router")>(
+      "@tanstack/react-router",
+    );
+  return {
+    ...actual,
+    useLocation: mockUseLocation,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+const { mockFetchAuthSession } = vi.hoisted(() => ({
+  mockFetchAuthSession: vi.fn(),
 }));
 
 vi.mock("aws-amplify/auth", () => ({
-  getCurrentUser: mockGetCurrentUser,
+  fetchAuthSession: mockFetchAuthSession,
+  signInWithRedirect: vi.fn(),
 }));
 
-window.scrollTo = vi.fn();
-
-async function renderRouter(initialUrl: string) {
-  const memoryHistory = createMemoryHistory({ initialEntries: [initialUrl] });
-  const router = createRouter({ routeTree, history: memoryHistory });
-  await router.load();
-  return render(<RouterProvider router={router} />);
+function renderCallback(search: string) {
+  mockUseLocation.mockReturnValue({ search } as unknown as ReturnType<
+    typeof mockUseLocation
+  >);
+  return render(<CallbackPage />);
 }
 
-describe("Callback route", () => {
-  it("shows loading state initially", async () => {
-    mockGetCurrentUser.mockImplementation(() => new Promise(() => {}));
-    await renderRouter("/callback");
+describe("CallbackPage", () => {
+  it("shows loading state while processing the code", () => {
+    mockFetchAuthSession.mockImplementation(() => new Promise(() => {}));
+
+    renderCallback("?code=abc123");
+
     expect(screen.getByText("正在完成登录…")).toBeInTheDocument();
   });
 
-  it("displays user id on success", async () => {
-    mockGetCurrentUser.mockResolvedValue({ userId: "user-123" });
-    await renderRouter("/callback");
-    expect(await screen.findByText(/user-123/)).toBeInTheDocument();
+  it("navigates to home after session is established", async () => {
+    mockFetchAuthSession.mockResolvedValue({});
+
+    renderCallback("?code=abc123");
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith({ to: "/" });
+    });
   });
 
-  it("displays error on failure", async () => {
-    mockGetCurrentUser.mockRejectedValue(new Error("invalid session"));
-    await renderRouter("/callback");
+  it("shows error and login button when code is missing", async () => {
+    mockFetchAuthSession.mockResolvedValue({});
+
+    renderCallback("");
+
+    expect(await screen.findByText(/缺少授权码/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "登录" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows error message when session fetch fails", async () => {
+    mockFetchAuthSession.mockRejectedValue(new Error("invalid session"));
+
+    renderCallback("?code=abc123");
+
     expect(await screen.findByText(/invalid session/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "登录" }),
+    ).toBeInTheDocument();
   });
 
-  it("displays generic error when rejection is not an Error", async () => {
-    mockGetCurrentUser.mockRejectedValue("unknown failure");
-    await renderRouter("/callback");
+  it("shows generic error when rejection is not an Error", async () => {
+    mockFetchAuthSession.mockRejectedValue("unknown failure");
+
+    renderCallback("?code=abc123");
+
     expect(await screen.findByText(/登录失败/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "登录" }),
+    ).toBeInTheDocument();
   });
 });
