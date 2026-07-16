@@ -45,6 +45,14 @@ export default $config({
           adminCreateUserConfig: {
             allowAdminCreateUserOnly: true,
           },
+          schemas: [
+            {
+              name: "name",
+              attributeDataType: "String",
+              required: true,
+              mutable: true,
+            },
+          ],
         },
       },
     });
