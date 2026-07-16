@@ -798,6 +798,258 @@ git commit -m "feat(web): handle cognito callback code and redirect to home"
 
 ---
 
+## Task 4: 新增受保护测试接口 `/api/verify` 与首页“验证 API”按钮
+
+> Covers: Scenario 2（401 时重定向到登录）端到端验收
+
+**Files:**
+- Create: `apps/api/src/verify/index.ts`
+- Create: `apps/api/src/verify/index.test.ts`
+- Modify: `sst.config.ts`
+- Modify: `apps/web/src/routes/index.tsx`
+- Modify: `apps/web/src/routes/index.test.tsx`
+
+**Interfaces:**
+- Consumes: Cognito JWT authorizer, `apiClient`, `buildResponse`
+- Produces: `GET /api/verify` returns `{ ok: true, userId }`; frontend button triggers 401 redirect or displays user sub
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `apps/api/src/verify/index.test.ts`:
+
+```typescript
+import type {
+  APIGatewayProxyEventV2WithJWTAuthorizer,
+  APIGatewayProxyHandlerV2WithJWTAuthorizer,
+} from "aws-lambda";
+import { describe, expect, it } from "vitest";
+import { handler } from "./index";
+
+function createVerifyEvent(userId?: string): APIGatewayProxyEventV2WithJWTAuthorizer {
+  const event = {
+    version: "2.0",
+    routeKey: "GET /api/verify",
+    rawPath: "/api/verify",
+    rawQueryString: "",
+    headers: {},
+    requestContext: {
+      domainId: "",
+      domainName: "",
+      domainPrefix: "",
+      http: {
+        method: "GET",
+        path: "/api/verify",
+        protocol: "HTTP/1.1",
+        sourceIp: "127.0.0.1",
+        userAgent: "test",
+      },
+      requestId: "test-request-id",
+      routeKey: "GET /api/verify",
+      stage: "dev",
+      time: "14/Jul/2026:00:00:00 +0000",
+      timeEpoch: 1752460800000,
+      accountId: "",
+      apiId: "",
+      authorizer: {
+        principalId: userId ?? "",
+        integrationLatency: 0,
+        jwt: {
+          claims: {
+            sub: userId ?? "",
+          },
+          scopes: [],
+        },
+      },
+    },
+    isBase64Encoded: false,
+  };
+
+  return event;
+}
+
+async function invokeHandler(event: APIGatewayProxyEventV2WithJWTAuthorizer) {
+  const result = await handler(event, {} as never, () => {});
+  if (typeof result === "string" || result === undefined) {
+    throw new Error("expected object response");
+  }
+  return result;
+}
+
+describe("verify handler", () => {
+  it("returns 200 with authenticated user id", async () => {
+    const event = createVerifyEvent("user-123");
+    const result = await invokeHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body ?? "{}");
+    expect(body.ok).toBe(true);
+    expect(body.userId).toBe("user-123");
+  });
+
+  it("returns unknown when authorizer claims are missing", async () => {
+    const event = createVerifyEvent();
+    const result = await invokeHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body ?? "{}");
+    expect(body.userId).toBe("unknown");
+  });
+
+  it("is typed as APIGatewayProxyHandlerV2WithJWTAuthorizer", () => {
+    const typed: APIGatewayProxyHandlerV2WithJWTAuthorizer = handler;
+    expect(typed).toBeDefined();
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run:
+
+```bash
+cd apps/api
+bun run test src/verify/index.test.ts
+```
+
+Expected: FAIL — `apps/api/src/verify/index.ts` does not exist.
+
+- [ ] **Step 3: Implement the verify handler and wire it up**
+
+Create `apps/api/src/verify/index.ts`:
+
+```typescript
+import { buildResponse } from "@lyco/shared";
+import type {
+  APIGatewayProxyEventV2WithJWTAuthorizer,
+  APIGatewayProxyHandlerV2WithJWTAuthorizer,
+} from "aws-lambda";
+
+export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
+) => {
+  const claims = event.requestContext.authorizer.jwt.claims;
+  const userId =
+    typeof claims.sub === "string" && claims.sub.length > 0
+      ? claims.sub
+      : "unknown";
+
+  return buildResponse(200, {
+    ok: true,
+    userId,
+  });
+};
+```
+
+Modify `sst.config.ts` to add the authorizer and protected route:
+
+```typescript
+const cognitoAuthorizer = api.addAuthorizer({
+  name: "CognitoAuthorizer",
+  jwt: {
+    issuer: $interpolate`https://cognito-idp.${aws.getRegionOutput().name}.amazonaws.com/${userPool.id}`,
+    audiences: [userPoolClient.id],
+  },
+});
+
+api.route(
+  "GET /api/verify",
+  {
+    handler: "apps/api/src/verify/index.handler",
+    runtime: "nodejs22.x",
+  },
+  {
+    auth: {
+      jwt: {
+        authorizer: cognitoAuthorizer.id,
+      },
+    },
+  },
+);
+```
+
+Modify `apps/web/src/routes/index.tsx` to add the verify button:
+
+```typescript
+import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/api";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { getCurrentUser } from "aws-amplify/auth";
+import { useEffect, useState } from "react";
+import { LoginButton } from "../components/LoginButton";
+
+export const Route = createFileRoute("/")({
+  component: HomePage,
+});
+
+function HomePage() {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [verifyResult, setVerifyResult] = useState<string | null>(null);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then((user) => setUserId(user.userId))
+      .catch(() => setUserId(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleVerifyApi() {
+    setVerifyResult(null);
+    setVerifyError(null);
+    try {
+      const data = await apiClient<{ userId: string }>("/api/verify");
+      setVerifyResult(data.userId);
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : "验证失败");
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold">今天</h2>
+      <p className="text-slate-600">智能列表占位页</p>
+      <div>
+        {loading ? (
+          <p>加载中…</p>
+        ) : userId ? (
+          <p>已登录用户：{userId}</p>
+        ) : (
+          <LoginButton />
+        )}
+      </div>
+      <div className="space-y-2">
+        <Button onClick={() => void handleVerifyApi()}>验证 API</Button>
+        {verifyResult && <p className="text-green-700">API 用户：{verifyResult}</p>}
+        {verifyError && <p className="text-red-600">验证失败：{verifyError}</p>}
+      </div>
+      <Link to="/about">
+        <Button>关于</Button>
+      </Link>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run:
+
+```bash
+bun run test
+```
+
+Expected: PASS with 100% coverage.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/api/src/verify/ apps/web/src/routes/index.tsx apps/web/src/routes/index.test.tsx sst.config.ts
+git commit -m "feat(api,web): add protected /api/verify endpoint and frontend verify button"
+```
+
+---
+
 ## Verification
 
 After all tasks are complete, run the full verification suite from the repository root:

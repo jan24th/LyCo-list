@@ -1,7 +1,7 @@
 ---
 Title: 实现 Cognito 登录回调与 401 重定向处理
 ID: 005
-Status: TODO
+Status: ARCHIVED
 Labels: web,auth
 Estimate: 3
 Depends: 002,004
@@ -37,6 +37,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - Token 的持久化由 AWS Amplify Auth 自动完成；前端通过 `fetchAuthSession` 读取 session，无需手动写入 `localStorage`。
 - Access token 过期时，`fetchAuthSession` 会自动使用 refresh token 刷新；`apiClient` 依赖该行为，不单独实现 refresh 轮询。
 - API 返回 401 时，前端调用 `signInWithRedirect()` 将用户送回 Cognito Hosted UI 重新登录。
+- 为支持场景 2 的端到端验收，新增了受 Cognito JWT 保护的 `GET /api/verify` 接口，并在首页放置“验证 API”按钮。该接口/按钮用于手动验证 401 重定向，后续可继续保留作为认证连通性检查。
 
 ## 验收标准
 
