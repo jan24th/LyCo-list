@@ -1,0 +1,11 @@
+meta {
+  name: get assignees
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/users/assignees?limit=50
+  body: none
+  auth: inherit
+}
