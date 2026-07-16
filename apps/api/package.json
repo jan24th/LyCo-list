@@ -7,6 +7,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1085.0",
     "@lyco/shared": "workspace:*"
   },
   "devDependencies": {

@@ -512,7 +512,7 @@ interface Notification {
 | PATCH  | `/api/tasks/{taskId}/reminders/{id}` | `reminders`     |
 | DELETE | `/api/tasks/{taskId}/reminders/{id}` | `reminders`     |
 | POST   | `/api/reminders/process-due`         | `reminders`     |
-| GET    | `/api/users`                         | `users`         |
+| GET    | `/api/users/assignees`               | `users`         |
 | GET    | `/api/notifications/pending`         | `notifications` |
 | POST   | `/api/notifications/{id}/read`       | `notifications` |
 | POST   | `/api/notifications/read-all`        | `notifications` |
@@ -537,7 +537,8 @@ interface Notification {
 
 ### 用户列表
 
-- `/api/users` 的 Lambda 使用 `cognito-idp:ListUsers` 最小 IAM 权限访问指定 User Pool。
+- `/api/users/assignees` 的 Lambda 使用 `cognito-idp:ListUsers` 最小 IAM 权限访问指定 User Pool，返回可选 assignee 列表。
+- Cognito User Pool 的 `name` 属性设置为必填，保证 assignee 列表始终有展示名称。
 - Lambda 跟随 `PaginationToken` 读取到 API `limit` 已填满或 Cognito 结果耗尽，并把剩余 `PaginationToken` 包装为不透明 `nextCursor`；只返回 `{ id: sub, name }`，显示名称依次取 `name`、`preferred_username`、`email`。
 
 ### 401 / Token 过期处理
@@ -746,7 +747,7 @@ API Gateway HTTP API 的 CORS 按 `$app.stage` 配置：
 4. 前端脚手架：React + Vite + TypeScript + Tailwind + shadcn/ui + TanStack Router/Query/Store/Form + Vitest。
 5. 前端认证与 Cognito Hosted UI 回调处理：登录/登出状态、token 刷新、**401 重定向处理**。
 6. 实现 `/api/health` 接口。
-7. 实现 `/api/users` 接口（返回可选 assignee 列表）。
+7. 实现 `/api/users/assignees` 接口（返回可选 assignee 列表）。
 8. 实现 `lists` 接口、软删除/恢复与前端自定义列表 CRUD 页面（TDD）。
 9. 实现统一 `tasks` 实体的无级子任务 CRUD、移动、完成和恢复（TDD）。
 10. 实现 `tasks` 的乐观并发、`assigneeIds` 更新事务和幂等分配通知（TDD）。
