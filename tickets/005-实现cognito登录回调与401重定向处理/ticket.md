@@ -29,6 +29,15 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - 用户注册、密码找回、MFA 等流程
 - 后端 API 对 token 的签名与权限校验
 
+## 实现说明
+
+- 回调地址统一为 `/callback`，因此需要同步修改：
+  - `sst.config.ts` 中的 Cognito `callbackUrls`（生产/acc 使用 `https://app.{stagePrefix}jan24th.today/callback`，开发使用 `http://localhost:5173/callback`）
+  - `apps/web/src/lib/auth.ts` 中的 `buildRedirectUrls`，使 Amplify OAuth 配置输出 `.../callback`
+- Token 的持久化由 AWS Amplify Auth 自动完成；前端通过 `fetchAuthSession` 读取 session，无需手动写入 `localStorage`。
+- Access token 过期时，`fetchAuthSession` 会自动使用 refresh token 刷新；`apiClient` 依赖该行为，不单独实现 refresh 轮询。
+- API 返回 401 时，前端调用 `signInWithRedirect()` 将用户送回 Cognito Hosted UI 重新登录。
+
 ## 验收标准
 
 ### 场景 1：处理 OAuth 回调

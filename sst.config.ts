@@ -65,9 +65,9 @@ export default $config({
 
     const callbackUrls = ((): string[] => {
       if (isCustomDomainStage && baseDomain) {
-        return [`https://app.${stagePrefix}${baseDomain}/`];
+        return [`https://app.${stagePrefix}${baseDomain}/callback`];
       }
-      return ["http://localhost:5173/"];
+      return ["http://localhost:5173/callback"];
     })();
 
     const userPoolClient = userPool.addClient("WebClient", {
@@ -94,6 +94,14 @@ export default $config({
       },
     });
 
+    const cognitoAuthorizer = api.addAuthorizer({
+      name: "CognitoAuthorizer",
+      jwt: {
+        issuer: $interpolate`https://cognito-idp.${aws.getRegionOutput().name}.amazonaws.com/${userPool.id}`,
+        audiences: [userPoolClient.id],
+      },
+    });
+
     api.route("GET /api/health", {
       handler: "apps/api/src/health/index.handler",
       runtime: "nodejs22.x",
@@ -102,6 +110,21 @@ export default $config({
         USER_POOL_CLIENT_ID: userPoolClient.id,
       },
     });
+
+    api.route(
+      "GET /api/verify",
+      {
+        handler: "apps/api/src/verify/index.handler",
+        runtime: "nodejs22.x",
+      },
+      {
+        auth: {
+          jwt: {
+            authorizer: cognitoAuthorizer.id,
+          },
+        },
+      },
+    );
 
     return {
       api: api.url,
