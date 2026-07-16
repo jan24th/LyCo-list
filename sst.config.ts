@@ -111,15 +111,20 @@ export default $config({
       },
     });
 
-    api.route("GET /api/verify", {
-      handler: "apps/api/src/verify/index.handler",
-      runtime: "nodejs22.x",
-      auth: {
-        jwt: {
-          authorizer: cognitoAuthorizer.id,
+    api.route(
+      "GET /api/verify",
+      {
+        handler: "apps/api/src/verify/index.handler",
+        runtime: "nodejs22.x",
+      },
+      {
+        auth: {
+          jwt: {
+            authorizer: cognitoAuthorizer.id,
+          },
         },
       },
-    });
+    );
 
     return {
       api: api.url,
