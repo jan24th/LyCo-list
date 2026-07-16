@@ -22,6 +22,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - 实现 GET /users/assignees 接口
 - 返回当前用户可分配的用户列表
 - 支持分页并返回下一页 cursor
+- 在 Cognito User Pool 中约束 `name` 属性为必填项
 
 ### 不包含
 - 任务分配的业务逻辑与数据写入
@@ -35,6 +36,12 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 Given 已认证用户
 When 用户调用 GET /users/assignees
 Then 返回可分配用户列表
+
+### 场景 3：Cognito 用户必须填写 name
+
+Given 管理员在 Cognito User Pool 中创建用户
+When 未填写 `name` 属性
+Then 创建失败并提示 name 必填
 
 ### 场景 2：分页返回 assignee
 
