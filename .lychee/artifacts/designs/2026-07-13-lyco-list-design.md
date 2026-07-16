@@ -261,6 +261,8 @@ cleanup Lambda ───────────────► DynamoDB
 
 属性：`name`, `color`, `icon`, `order`, `version`, `deletedAt`, `undoUntil`, `deletionVersion`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`。
 
+> **阶段说明**：在 008（列表 CRUD）阶段，列表软删除仅写入 `deletedAt` 并递增 `version`；`undoUntil`、`deletionVersion` 及 `DELETION_JOB` 在 018（cleanup Lambda）阶段统一引入。任务软删除在 010 阶段实现，可采用完整字段。
+
 #### 任务（TASK）
 
 | 字段   | 值                              |
@@ -465,8 +467,11 @@ interface Notification {
 - **提醒接收人**：任务有 assignee 时通知全部 assignee；未分配任务只通知提醒创建者。
 - **时区**：`dueDate` 是 `YYYY-MM-DD` 本地日历日期，`dueTime` 是 `HH:mm` 本地时间，`timeZone` 使用 IANA 名称；计算后的 `triggerAt`、审计时间和完成时间使用 ISO 8601 UTC。"今天"按查看者本地日期边界计算。
 - **删除父任务**：非空父任务禁止删除，子任务必须先移除或移动；后端通过应用层约束强制执行。
-- **删除与撤销**：任务和列表先写入 `deletedAt`、`undoUntil = deletedAt + 30 秒`、`deletionVersion` 并创建 `DELETION_JOB`。读取接口立即隐藏软删除数据；撤销接口在期限内恢复，超过期限返回 `410 GONE`；cleanup Lambda 在期限后分页清理关联任务、提醒和通知，并重试 `UnprocessedItems`。
-- **删除列表**：删除列表需要二次确认；列表进入软删除状态后，其全部任务立即从所有查询隐藏，随后由 cleanup Lambda 级联清理。
+- **删除与撤销**：
+  - **列表（008）**：删除时写入 `deletedAt` 并递增 `version`；恢复时清除 `deletedAt` 并再次递增 `version`。本期不设置 `undoUntil`/`deletionVersion`，也不创建 `DELETION_JOB`；因此恢复不检查过期，也不返回 `410 GONE`。
+  - **任务（010）**：删除时写入 `deletedAt`、`undoUntil = deletedAt + 30 秒`、`deletionVersion` 并创建 `DELETION_JOB`。读取接口立即隐藏软删除数据；撤销接口在期限内恢复，超过期限返回 `410 GONE`。
+  - **cleanup（018）**：超过 `undoUntil` 的 `DELETION_JOB` 由 cleanup Lambda 分页清理关联任务、提醒和通知，并重试 `UnprocessedItems`。
+- **删除列表**：删除列表需要二次确认；列表进入软删除状态后，其全部任务立即从所有查询隐藏（由 tasks 查询接口过滤），硬删除与级联清理由 cleanup Lambda 在 018 阶段处理。
 - **移动父任务**：父任务移动到另一个列表时，所有后代子任务自动跟随。
 - **重复任务完成**：非重复任务设置 `isCompleted = true` 和 `completedAt`；重复任务写入 `lastCompletedAt`、保持未完成，并按其 IANA 时区使用本地日历规则推进截止日期与提醒，避免夏令时漂移。
 - **重复规则互斥**：任务设置 `recurrence != 'none'` 时，其提醒的 `recurrence` 必须为 `none`，提醒随任务一起推进；只有非重复任务的提醒可以设置独立重复规则。共享 Zod schema 强制该约束，避免同一提醒被双重推进。
@@ -815,7 +820,7 @@ API Gateway HTTP API 的 CORS 按 `$app.stage` 配置：
 - Assign 任务后，被分配者在应用启动、恢复前台或保持可见时收到浏览器通知（若授权），重试不产生重复通知。
 - PWA 可安装；页面负责前台轮询，Service Worker 负责离线应用壳和展示通知，不承诺应用关闭后的通知。
 - 重复任务和提醒在配置的 IANA 时区内正确跨越月末、闰年和 DST。
-- 删除任务或列表后可在撤销期限内恢复，期限后关联数据由 cleanup Lambda 最终清理且不遗留提醒。
+- 删除任务后可在撤销期限内恢复，期限后关联数据由 cleanup Lambda 最终清理且不遗留提醒；删除列表后可立即恢复，列表及其关联任务的最终清理由 cleanup Lambda 在 018 阶段处理。
 - 所有业务逻辑按 TDD 开发，Vitest 覆盖率达到 100%。
 - CI 阻止未通过测试或覆盖率不达标的合并。
 

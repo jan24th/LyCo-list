@@ -19,7 +19,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ## 范围
 
 ### 包含
-- 列表编辑入口（侧边栏右键菜单、列表设置按钮或详情页动作）
+- 列表编辑入口复用 008A 侧边栏自定义列表的"列表设置"菜单中的"编辑"项
 - 编辑表单：名称、颜色、图标
 - 调用 PATCH `/api/lists/{id}` 并携带 `expectedVersion`
 - 成功后刷新列表查询缓存
@@ -35,7 +35,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ### 场景 1：编辑列表名称
 
 Given 一个已存在的自定义列表
-When 用户修改其名称并提交
+When 用户从设置菜单选择"编辑"并修改名称后提交
 Then 列表名称更新并同步到侧边栏
 
 ### 场景 2：编辑列表颜色与图标
