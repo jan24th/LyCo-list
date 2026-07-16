@@ -6,7 +6,7 @@
 
 **Goal:** 在 SST v3 中为 LyCo-list 前端 (`app.jan24th.today`) 与 API (`api.jan24th.today`) 仅在 `prod` stage 绑定自定义域名，并同步 Bruno 生产环境 baseUrl，最终通过部署验证域名可访问。
 
-**Architecture:** 在根 `sst.config.ts` 中根据全局 `$app.stage` 条件为 `sst.aws.ApiGatewayV2` 与 `sst.aws.StaticSite` 注入 `domain` 属性；`dev` stage 保持 SST 自动生成 URL，`prod` stage 使用 Route 53 托管的 `jan24th.today` 子域名，由 SST 自动申请/验证 ACM 证书并创建 DNS 记录。Bruno `production.bru` 的 `baseUrl` 同步改为 `https://api.jan24th.today`，用于部署后手动验证。
+**Architecture:** 在根 `sst.config.ts` 中根据全局 `$app.stage` 条件为 `sst.aws.ApiGatewayV2` 与 `sst.aws.StaticSite` 注入 `domain` 属性；`dev` stage 保持 SST 自动生成 URL，`prod` stage 使用 Route 53 托管的 `jan24th.today` 子域名，由 SST 自动申请/验证 ACM 证书并创建 DNS 记录。Bruno `prod.bru` 的 `baseUrl` 同步改为 `https://api.jan24th.today`，用于部署后手动验证。
 
 ## Global Constraints
 
@@ -164,17 +164,17 @@ git commit -m "feat(infra): configure custom domains for prod stage"
 > Covers: Scenario 5（Bruno 生产环境 baseUrl 同步）
 
 **Files:**
-- Modify: `bruno/lyco-list/environments/production.bru`
+- Modify: `bruno/lyco-list/environments/prod.bru`
 
 **Interfaces:**
-- Consumes: Existing `production.bru` with `baseUrl: https://api.example.com`
-- Produces: `production.bru` with `baseUrl: https://api.jan24th.today`
+- Consumes: Existing `prod.bru` with `baseUrl: https://api.example.com`
+- Produces: `prod.bru` with `baseUrl: https://api.jan24th.today`
 
-- [ ] **Step 1: 读取当前 `production.bru`**
+- [ ] **Step 1: 读取当前 `prod.bru`**
 
 Run:
 ```bash
-cat bruno/lyco-list/environments/production.bru
+cat bruno/lyco-list/environments/prod.bru
 ```
 
 Expected:
@@ -200,7 +200,7 @@ vars {
 
 Run:
 ```bash
-cat bruno/lyco-list/environments/production.bru
+cat bruno/lyco-list/environments/prod.bru
 ```
 
 Expected output exactly:
@@ -215,8 +215,8 @@ vars {
 
 Run:
 ```bash
-git add bruno/lyco-list/environments/production.bru
-git commit -m "chore(bruno): update production baseUrl to api.jan24th.today"
+git add bruno/lyco-list/environments/prod.bru
+git commit -m "chore(bruno): update prod baseUrl to api.jan24th.today"
 ```
 
 ---
@@ -227,7 +227,7 @@ git commit -m "chore(bruno): update production baseUrl to api.jan24th.today"
 
 **Files:**
 - Uses: `sst.config.ts`
-- Uses: `bruno/lyco-list/health/get health.bru` and `bruno/lyco-list/environments/production.bru`
+- Uses: `bruno/lyco-list/health/get health.bru` and `bruno/lyco-list/environments/prod.bru`
 
 **Interfaces:**
 - Consumes: `sst deploy --stage prod`; AWS credentials via `AWS_PROFILE`; Route 53 hosted zone for `jan24th.today`
@@ -362,7 +362,7 @@ If custom domain deployment causes issues in prod:
 
 1. Revert `sst.config.ts` to remove `domain: domain.api` and `domain: domain.web`.
 2. Run `bunx sst deploy --stage prod` to remove custom domain resources.
-3. Revert `bruno/lyco-list/environments/production.bru` to the previous `baseUrl` value.
+3. Revert `bruno/lyco-list/environments/prod.bru` to the previous `baseUrl` value.
 
 ---
 

@@ -224,7 +224,7 @@ git commit -m "feat(infra): ensure health route is publicly accessible"
 
 **Files:**
 - Modify: `bruno/lyco-list/health/get health.bru`
-- Modify: `bruno/lyco-list/environments/development.bru`（如需调整 baseUrl）
+- Modify: `bruno/lyco-list/environments/acc.bru`（如需调整 baseUrl）
 
 **Interfaces:**
 - Produces: Bruno 集合中 `GET /api/health` 请求无需 `accessToken`。

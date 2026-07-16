@@ -539,7 +539,7 @@ interface Notification {
 
 - `/api/users/assignees` 的 Lambda 使用 `cognito-idp:ListUsers` 最小 IAM 权限访问指定 User Pool，返回可选 assignee 列表。
 - Cognito User Pool 的 `name` 属性设置为必填，保证 assignee 列表始终有展示名称。
-- Lambda 跟随 `PaginationToken` 读取到 API `limit` 已填满或 Cognito 结果耗尽，并把剩余 `PaginationToken` 包装为不透明 `nextCursor`；只返回 `{ id: sub, name }`，显示名称依次取 `name`、`preferred_username`、`email`。
+- Lambda 跟随 `PaginationToken` 读取到 API `limit` 已填满或 Cognito 结果耗尽，并把剩余 `PaginationToken` 包装为不透明 `nextCursor`；只返回 `{ id: sub, name }`，显示名称取 `name`。
 
 ### 401 / Token 过期处理
 
@@ -633,7 +633,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 ## Bruno API 集合
 
 - 在仓库根目录 `bruno/` 下以 `.bru` 文件形式存储 API 请求。
-- ticket 001 初始化 Bruno 集合，包含 `development` 和 `production` 环境，以及 `GET /api/health` 占位请求。
+- ticket 001 初始化 Bruno 集合，包含 `acc` 和 `prod` 环境（对应 `acc.bru` 和 `prod.bru`），以及 `GET /api/health` 占位请求。
 - 后续 ticket 逐步补充每个接口的对应请求，包含 create/update/assign 的示例请求体。
 - 由于业务接口需要 Cognito JWT 授权，集合中需先执行登录步骤获取 Access Token。token 通过本地环境变量 `BRUNO_ACCESS_TOKEN` 注入（`.bru` 文件中使用 `{{process.env.BRUNO_ACCESS_TOKEN}}`），避免将敏感凭证提交到版本控制；后续请求自动注入 `Authorization: Bearer <token>`。
 - Bruno 用于开发阶段手动 API 测试，以及团队内共享 API 示例。

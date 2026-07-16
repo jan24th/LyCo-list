@@ -1,7 +1,7 @@
 ---
 Title: 实现 Users Assignee 列表接口
 ID: 007
-Status: TODO
+Status: COMPLETED
 Labels: api,users
 Estimate: 2
 Depends: 003,006
@@ -19,7 +19,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ## 范围
 
 ### 包含
-- 实现 GET /users/assignees 接口
+- 实现 GET /api/users/assignees 接口
 - 返回当前用户可分配的用户列表
 - 支持分页并返回下一页 cursor
 - 在 Cognito User Pool 中约束 `name` 属性为必填项
@@ -34,7 +34,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 ### 场景 1：列出 assignee
 
 Given 已认证用户
-When 用户调用 GET /users/assignees
+When 用户调用 GET /api/users/assignees
 Then 返回可分配用户列表
 
 ### 场景 3：Cognito 用户必须填写 name

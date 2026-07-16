@@ -580,10 +580,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
       if (!nextCognitoToken) break;
     }
 
-    const nextCursor =
-      nextCognitoToken && users.length >= query.limit
-        ? encodeCursor({ paginationToken: nextCognitoToken })
-        : undefined;
+    const nextCursor = nextCognitoToken
+      ? encodeCursor({ paginationToken: nextCognitoToken })
+      : undefined;
 
     return buildResponse(200, {
       items: users,
@@ -857,45 +856,15 @@ git commit -m "chore(repo): apply formatting and finalize"
 > Covers: Keep the source design aligned with the implemented path and Cognito constraint.
 
 **Files:**
-- Modify: `.lychee/artifacts/designs/2026-07-13-lyco-list-design.md`
+- Verify: `.lychee/artifacts/designs/2026-07-13-lyco-list-design.md`
 
-The source design references `/api/users`, but this ticket implements `/api/users/assignees`. Update the three occurrences and document the `name` requirement.
+The design document already uses `/api/users/assignees` and documents the required `name` attribute. After implementation, verify the following three occurrences are correct:
 
-- [ ] **Step 1: Update the API overview table**
+- API overview table lists `GET /api/users/assignees` under the `users` Lambda.
+- "用户列表" section describes `/api/users/assignees` using `cognito-idp:ListUsers` and notes that the `name` attribute is required.
+- Roadmap item 7 reads "实现 `/api/users/assignees` 接口（返回可选 assignee 列表）。"
 
-Replace:
-```markdown
-| GET    | `/api/users`                         | `users`         |
-```
-with:
-```markdown
-| GET    | `/api/users/assignees`               | `users`         |
-```
-
-- [ ] **Step 2: Update the "用户列表" section**
-
-Replace:
-```markdown
-- `/api/users` 的 Lambda 使用 `cognito-idp:ListUsers` 最小 IAM 权限访问指定 User Pool。
-```
-with:
-```markdown
-- `/api/users/assignees` 的 Lambda 使用 `cognito-idp:ListUsers` 最小 IAM 权限访问指定 User Pool，返回可选 assignee 列表。
-- Cognito User Pool 的 `name` 属性设置为必填，保证 assignee 列表始终有展示名称。
-```
-
-- [ ] **Step 3: Update the roadmap item**
-
-Replace:
-```markdown
-7. 实现 `/api/users` 接口（返回可选 assignee 列表）。
-```
-with:
-```markdown
-7. 实现 `/api/users/assignees` 接口（返回可选 assignee 列表）。
-```
-
-- [ ] **Step 4: Commit**
+If any occurrence still uses `/api/users`, update it to `/api/users/assignees` and commit:
 
 ```bash
 git add .lychee/artifacts/designs/2026-07-13-lyco-list-design.md

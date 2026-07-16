@@ -24,7 +24,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
 - 为 `sst.aws.StaticSite`（前端）配置自定义域名 `app.jan24th.today`。
 - 为 `sst.aws.ApiGatewayV2`（API）配置自定义域名 `api.jan24th.today`。
 - 配置后验证自定义域名可解析并返回预期响应。
-- 同步更新 Bruno `production.bru` 的 `baseUrl`（若尚未更新为 `https://api.jan24th.today`）。
+- 同步更新 Bruno `prod.bru` 的 `baseUrl`（若尚未更新为 `https://api.jan24th.today`）。
 
 ### 不包含
 
@@ -68,7 +68,7 @@ Then 绑定验收环境自定义域名 `app.acc.jan24th.today` / `api.acc.jan24t
 
 ### 场景 5：Bruno 生产环境 baseUrl 同步
 
-Given Bruno 集合已存在 `production.bru`
+Given Bruno 集合已存在 `prod.bru`
 When 检查 `baseUrl` 变量
 Then 其值为 `https://api.jan24th.today`
 
