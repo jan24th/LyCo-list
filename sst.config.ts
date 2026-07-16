@@ -94,12 +94,30 @@ export default $config({
       },
     });
 
+    const cognitoAuthorizer = api.addAuthorizer({
+      name: "CognitoAuthorizer",
+      jwt: {
+        issuer: $interpolate`https://cognito-idp.${aws.getRegionOutput().name}.amazonaws.com/${userPool.id}`,
+        audiences: [userPoolClient.id],
+      },
+    });
+
     api.route("GET /api/health", {
       handler: "apps/api/src/health/index.handler",
       runtime: "nodejs22.x",
       environment: {
         USER_POOL_ID: userPool.id,
         USER_POOL_CLIENT_ID: userPoolClient.id,
+      },
+    });
+
+    api.route("GET /api/verify", {
+      handler: "apps/api/src/verify/index.handler",
+      runtime: "nodejs22.x",
+      auth: {
+        jwt: {
+          authorizer: cognitoAuthorizer.id,
+        },
       },
     });
 
