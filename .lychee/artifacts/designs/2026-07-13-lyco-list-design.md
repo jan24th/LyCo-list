@@ -543,7 +543,7 @@ interface Notification {
 ### 401 / Token 过期处理
 
 - 前端通过 Amplify 自动刷新 Access Token。
-- 当 API 返回 `401` 时，前端尝试静默刷新；刷新失败则清除本地 session 并重定向到 Cognito Hosted UI 登录页。
+- 当 API 返回 `401` 时，说明 `fetchAuthSession` 已无法自动刷新 Access Token；前端调用 `signInWithRedirect()` 重定向到 Cognito Hosted UI 登录页，登录成功后 Amplify 自动覆盖本地无效 session。
 - 登录成功后回到原页面。
 
 ### 前端 API 调用
