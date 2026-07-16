@@ -1,6 +1,10 @@
 import { LoginButton } from "@/components/LoginButton";
 import { parseCallbackCode } from "@/lib/auth";
-import { createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useLocation,
+  useNavigate,
+} from "@tanstack/react-router";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { useEffect, useState } from "react";
 
@@ -15,7 +19,7 @@ export function CallbackPage() {
   const [processing, setProcessing] = useState(true);
 
   useEffect(() => {
-    const code = parseCallbackCode(location.search);
+    const code = parseCallbackCode(location.searchStr);
     if (!code) {
       setError("缺少授权码");
       setProcessing(false);

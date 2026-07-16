@@ -8,10 +8,9 @@ const { mockNavigate, mockUseLocation } = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-router", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-router")>(
-      "@tanstack/react-router",
-    );
+  const actual = await vi.importActual<typeof import("@tanstack/react-router")>(
+    "@tanstack/react-router",
+  );
   return {
     ...actual,
     useLocation: mockUseLocation,
@@ -29,7 +28,7 @@ vi.mock("aws-amplify/auth", () => ({
 }));
 
 function renderCallback(search: string) {
-  mockUseLocation.mockReturnValue({ search } as unknown as ReturnType<
+  mockUseLocation.mockReturnValue({ searchStr: search } as unknown as ReturnType<
     typeof mockUseLocation
   >);
   return render(<CallbackPage />);
@@ -60,9 +59,7 @@ describe("CallbackPage", () => {
     renderCallback("");
 
     expect(await screen.findByText(/缺少授权码/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "登录" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "登录" })).toBeInTheDocument();
   });
 
   it("shows error message when session fetch fails", async () => {
@@ -71,9 +68,7 @@ describe("CallbackPage", () => {
     renderCallback("?code=abc123");
 
     expect(await screen.findByText(/invalid session/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "登录" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "登录" })).toBeInTheDocument();
   });
 
   it("shows generic error when rejection is not an Error", async () => {
@@ -82,8 +77,6 @@ describe("CallbackPage", () => {
     renderCallback("?code=abc123");
 
     expect(await screen.findByText(/登录失败/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "登录" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "登录" })).toBeInTheDocument();
   });
 });
