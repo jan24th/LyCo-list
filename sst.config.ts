@@ -134,6 +134,30 @@ export default $config({
       },
     );
 
+    api.route(
+      "GET /api/users/assignees",
+      {
+        handler: "apps/api/src/users/index.handler",
+        runtime: "nodejs22.x",
+        environment: {
+          USER_POOL_ID: userPool.id,
+        },
+        permissions: [
+          {
+            actions: ["cognito-idp:ListUsers"],
+            resources: [userPool.arn],
+          },
+        ],
+      },
+      {
+        auth: {
+          jwt: {
+            authorizer: cognitoAuthorizer.id,
+          },
+        },
+      },
+    );
+
     return {
       api: api.url,
       web: web.url,
