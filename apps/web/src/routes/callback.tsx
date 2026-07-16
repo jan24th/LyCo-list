@@ -36,7 +36,7 @@ export function CallbackPage() {
       .finally(() => {
         setProcessing(false);
       });
-  }, [location.search, navigate]);
+  }, [location.searchStr, navigate]);
 
   if (processing) {
     return <div className="p-4">正在完成登录…</div>;

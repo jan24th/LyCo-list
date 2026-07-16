@@ -28,9 +28,9 @@ vi.mock("aws-amplify/auth", () => ({
 }));
 
 function renderCallback(search: string) {
-  mockUseLocation.mockReturnValue({ searchStr: search } as unknown as ReturnType<
-    typeof mockUseLocation
-  >);
+  mockUseLocation.mockReturnValue({
+    searchStr: search,
+  } as unknown as ReturnType<typeof mockUseLocation>);
   return render(<CallbackPage />);
 }
 
