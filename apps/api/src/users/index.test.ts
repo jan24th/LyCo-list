@@ -1,9 +1,9 @@
+import { encodeCursor } from "@lyco/shared";
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyHandlerV2WithJWTAuthorizer,
 } from "aws-lambda";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { encodeCursor } from "@lyco/shared";
 
 const { sendMock } = vi.hoisted(() => ({ sendMock: vi.fn() }));
 
@@ -65,9 +65,7 @@ function createEvent(
   return event;
 }
 
-async function invokeHandler(
-  event: APIGatewayProxyEventV2WithJWTAuthorizer,
-) {
+async function invokeHandler(event: APIGatewayProxyEventV2WithJWTAuthorizer) {
   const result = await handler(event, {} as never, () => {});
   if (typeof result === "string" || result === undefined) {
     throw new Error("expected object response");
@@ -82,6 +80,7 @@ describe("users assignees handler", () => {
   });
 
   afterEach(() => {
+    // biome-ignore lint/performance/noDelete: need to actually remove the env var, not set it to "undefined"
     delete process.env.USER_POOL_ID;
   });
 
@@ -250,6 +249,25 @@ describe("users assignees handler", () => {
     expect(body.items).toEqual([]);
   });
 
+  it("excludes users with invalid sub", async () => {
+    sendMock.mockResolvedValueOnce({
+      Users: [
+        {
+          Username: "invalid-sub",
+          Attributes: [
+            { Name: "sub", Value: "not-a-uuid" },
+            { Name: "name", Value: "Invalid" },
+          ],
+        },
+      ],
+    });
+
+    const result = await invokeHandler(createEvent());
+    const body = JSON.parse(result.body ?? "{}");
+
+    expect(body.items).toEqual([]);
+  });
+
   it("returns empty list when Cognito has no users", async () => {
     sendMock.mockResolvedValueOnce({ Users: [] });
 
@@ -258,6 +276,55 @@ describe("users assignees handler", () => {
 
     expect(body.items).toEqual([]);
     expect(body.nextCursor).toBeUndefined();
+  });
+
+  it("handles Cognito response without Users field", async () => {
+    sendMock.mockResolvedValueOnce({});
+
+    const result = await invokeHandler(createEvent());
+    const body = JSON.parse(result.body ?? "{}");
+
+    expect(body.items).toEqual([]);
+  });
+
+  it("handles attributes missing name or value", async () => {
+    sendMock.mockResolvedValueOnce({
+      Users: [
+        {
+          Username: "missing-name",
+          Attributes: [{ Value: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11" }],
+        },
+        {
+          Username: "missing-value",
+          Attributes: [{ Name: "sub" }],
+        },
+        {
+          Username: "valid",
+          Attributes: [
+            { Name: "sub", Value: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11" },
+            { Name: "name", Value: "Valid" },
+          ],
+        },
+      ],
+    });
+
+    const result = await invokeHandler(createEvent());
+    const body = JSON.parse(result.body ?? "{}");
+
+    expect(body.items).toEqual([
+      { id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", name: "Valid" },
+    ]);
+  });
+
+  it("excludes users without Attributes field", async () => {
+    sendMock.mockResolvedValueOnce({
+      Users: [{ Username: "no-attributes" }],
+    });
+
+    const result = await invokeHandler(createEvent());
+    const body = JSON.parse(result.body ?? "{}");
+
+    expect(body.items).toEqual([]);
   });
 
   it("returns 400 for invalid limit", async () => {
@@ -276,8 +343,26 @@ describe("users assignees handler", () => {
     expect(body.code).toBe("INVALID_CURSOR");
   });
 
+  it("returns 400 for cursor missing paginationToken", async () => {
+    const cursor = encodeCursor({ other: "value" });
+    const result = await invokeHandler(createEvent({ cursor }));
+    const body = JSON.parse(result.body ?? "{}");
+
+    expect(result.statusCode).toBe(400);
+    expect(body.code).toBe("INVALID_CURSOR");
+  });
+
   it("returns 500 when USER_POOL_ID is missing", async () => {
+    // biome-ignore lint/performance/noDelete: need to actually remove the env var, not set it to "undefined"
     delete process.env.USER_POOL_ID;
+
+    const result = await invokeHandler(createEvent());
+
+    expect(result.statusCode).toBe(500);
+  });
+
+  it("returns 500 when Cognito call fails", async () => {
+    sendMock.mockRejectedValueOnce(new Error("Cognito down"));
 
     const result = await invokeHandler(createEvent());
 

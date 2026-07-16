@@ -3,23 +3,23 @@ import {
   ListUsersCommand,
   type UserType,
 } from "@aws-sdk/client-cognito-identity-provider";
-import type {
-  APIGatewayProxyEventV2WithJWTAuthorizer,
-  APIGatewayProxyHandlerV2WithJWTAuthorizer,
-} from "aws-lambda";
 import {
   type ApiResponse,
-  buildResponse,
   CursorError,
+  type User,
+  ValidationError,
+  buildResponse,
   decodeCursor,
   encodeCursor,
   errorResponse,
   listQuerySchema,
   parseRequest,
   userSchema,
-  type User,
-  ValidationError,
 } from "@lyco/shared";
+import type {
+  APIGatewayProxyEventV2WithJWTAuthorizer,
+  APIGatewayProxyHandlerV2WithJWTAuthorizer,
+} from "aws-lambda";
 
 const client = new CognitoIdentityProviderClient({});
 
@@ -70,10 +70,9 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
       if (!nextCognitoToken) break;
     }
 
-    const nextCursor =
-      nextCognitoToken && users.length >= query.limit
-        ? encodeCursor({ paginationToken: nextCognitoToken })
-        : undefined;
+    const nextCursor = nextCognitoToken
+      ? encodeCursor({ paginationToken: nextCognitoToken })
+      : undefined;
 
     return buildResponse(200, {
       items: users,
