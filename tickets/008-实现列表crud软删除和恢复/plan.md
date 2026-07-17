@@ -48,7 +48,7 @@ bun add @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb --cwd apps/api --registry
 在 `sst.config.ts` 的 `run()` 中，在 `const api = new sst.aws.ApiGatewayV2(...)` 之后、`const web = ...` 之前插入：
 
 ```typescript
-const table = new sst.aws.DynamoDB("LycoTable", {
+const table = new sst.aws.Dynamo("LycoTable", {
   fields: {
     PK: "string",
     SK: "string",
@@ -59,9 +59,7 @@ const table = new sst.aws.DynamoDB("LycoTable", {
   globalIndexes: {
     GSI1: { hashKey: "GSI1PK", rangeKey: "GSI1SK" },
   },
-  ttl: {
-    attribute: "expiresAtEpoch",
-  },
+  ttl: "expiresAtEpoch",
 });
 ```
 

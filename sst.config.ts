@@ -71,7 +71,7 @@ export default $config({
       domain: domain.api,
     });
 
-    const table = new sst.aws.DynamoDB("LycoTable", {
+    const table = new sst.aws.Dynamo("LycoTable", {
       fields: {
         PK: "string",
         SK: "string",
@@ -82,9 +82,7 @@ export default $config({
       globalIndexes: {
         GSI1: { hashKey: "GSI1PK", rangeKey: "GSI1SK" },
       },
-      ttl: {
-        attribute: "expiresAtEpoch",
-      },
+      ttl: "expiresAtEpoch",
     });
 
     const callbackUrls = ((): string[] => {
