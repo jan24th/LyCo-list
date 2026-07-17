@@ -2,7 +2,7 @@
 
 > Ticket: `tickets/008-实现列表crud软删除和恢复/ticket.md`
 > Plan: `tickets/008-实现列表crud软删除和恢复/plan.md`
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `subagent-driven-development` (recommended) or `executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `subagent-driven-development` (recommended) or `executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 在 `apps/api` 中实现 `lists` Lambda，暴露 `GET /api/lists`、`POST /api/lists`、`PATCH /api/lists/{id}`、`DELETE /api/lists/{id}`、`POST /api/lists/{id}/restore`，支持乐观并发 `expectedVersion`、软删除/恢复、分页 cursor，并达到 100% 测试覆盖率。
 
@@ -37,13 +37,13 @@
 **Interfaces:**
 - Produces: 环境变量 `TABLE_NAME` 注入 `lists` Lambda；DynamoDB 表 `LycoTable` 带 GSI1；API Gateway 路由绑定。
 
-- [ ] **Step 1: Add AWS SDK dependencies to `apps/api`**
+- [x] **Step 1: Add AWS SDK dependencies to `apps/api`**
 
 ```bash
 bun add @aws-sdk/client-dynamodb @aws-sdk/lib-dynamodb --cwd apps/api --registry https://registry.npmmirror.com
 ```
 
-- [ ] **Step 2: Add DynamoDB table and list routes in `sst.config.ts`**
+- [x] **Step 2: Add DynamoDB table and list routes in `sst.config.ts`**
 
 在 `sst.config.ts` 的 `run()` 中，在 `const api = new sst.aws.ApiGatewayV2(...)` 之后、`const web = ...` 之前插入：
 
@@ -93,12 +93,12 @@ api.route("POST /api/lists", listHandler, listAuth);
 api.route("ANY /api/lists/{proxy+}", listHandler, listAuth);
 ```
 
-- [ ] **Step 3: Verify SST config type-checks**
+- [x] **Step 3: Verify SST config type-checks**
 
 Run: `bunx tsc --noEmit -p apps/api/tsconfig.json`
 Expected: no errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add sst.config.ts apps/api/package.json
@@ -122,7 +122,7 @@ git commit -m "infra(api): add dynamodb table and lists lambda route"
 - Consumes: `listUpdateSchema`（已存在）。
 - Produces: `listUpdateBodySchema`、`listRestoreBodySchema`、`listDeleteQuerySchema` 及对应类型。
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 在 `packages/shared/src/schema/lists/index.test.ts` 创建文件（若不存在）：
 
@@ -181,12 +181,12 @@ describe("listDeleteQuerySchema", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `bun run test -- --project packages/shared src/schema/lists/index.test.ts`
 Expected: FAIL with exports not found.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 在 `packages/shared/src/schema/lists/index.ts` 末尾追加：
 
@@ -212,12 +212,12 @@ export type ListRestoreBody = z.infer<typeof listRestoreBodySchema>;
 export type ListDeleteQuery = z.infer<typeof listDeleteQuerySchema>;
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `bun run test -- --project packages/shared src/schema/lists/index.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Run full shared suite and typecheck**
+- [x] **Step 5: Run full shared suite and typecheck**
 
 Run:
 ```bash
@@ -226,7 +226,7 @@ bunx tsc --noEmit -p packages/shared/tsconfig.json
 ```
 Expected: all pass, coverage 100%.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/shared/src/schema/lists/index.ts packages/shared/src/schema/lists/index.test.ts
@@ -250,9 +250,9 @@ git commit -m "feat(shared): add expectedVersion schemas for list mutations"
 
 **Interfaces:**
 - Consumes: `listInputSchema`, `listUpdateSchema` 类型（`ListInput`, `ListUpdate`），`encodeCursor`/`decodeCursor`（仅测试用），`formatOrderKey`。
-- Produces: `createList(input, metadata) -> List`, `queryActiveLists(limit, cursor?) -> { items, nextCursor? }`, `updateList(id, input, expectedVersion, userId, now) -> List`, `deleteList(id, expectedVersion, userId, now) -> List`, `restoreList(id, expectedVersion, userId, now) -> List`, plus `NotFoundError` / `ConflictError`。
+- Produces: `createList(input, metadata) -> List`, `queryActiveLists(limit = 50, cursor?) -> { items, nextCursor? }`（服务层将 `limit` clamp 到 [1, 100]）, `updateList(id, input, expectedVersion, userId, now) -> List`, `deleteList(id, expectedVersion, userId, now) -> List`, `restoreList(id, expectedVersion, userId, now) -> List`, plus `NotFoundError` / `ConflictError`。
 
-- [ ] **Step 1: Write the repository implementation first (this is the core file)**
+- [x] **Step 1: Write the repository implementation first (this is the core file)**
 
 创建 `apps/api/src/lists/client.ts`：
 
@@ -268,16 +268,13 @@ export const documentClient = DynamoDBDocumentClient.from(
 创建 `apps/api/src/lists/db.ts`：
 
 ```typescript
-import {
-  ConditionalCheckFailedException,
-  ResourceNotFoundException,
-} from "@aws-sdk/client-dynamodb";
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import {
   GetCommand,
   PutCommand,
   QueryCommand,
-  UpdateCommand,
   type QueryCommandOutput,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
   type CursorKey,
@@ -362,33 +359,35 @@ export async function createList(
 }
 
 export async function queryActiveLists(
-  limit: number,
+  limit = 50,
   cursor?: CursorKey,
 ): Promise<{ items: List[]; nextCursor?: CursorKey }> {
+  const effectiveLimit = Math.min(Math.max(limit, 1), 100);
   const items: List[] = [];
   let lastEvaluatedKey: CursorKey | undefined = cursor;
+  let hasMore = true;
 
-  while (items.length < limit) {
+  while (hasMore && items.length < effectiveLimit) {
     const response: QueryCommandOutput = await documentClient.send(
       new QueryCommand({
         TableName: getTableName(),
         IndexName: "GSI1",
         KeyConditionExpression: "GSI1PK = :pk",
         ExpressionAttributeValues: { ":pk": "LISTS" },
-        Limit: limit,
+        Limit: effectiveLimit - items.length,
         ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
       }),
     );
 
-    for (const item of response.Items ?? []) {
-      const parsed = toList(item);
-      if (parsed && !parsed.deletedAt) {
-        items.push(parsed);
-      }
-    }
+    const pageItems = (response.Items ?? [])
+      .map(toList)
+      .filter((parsed): parsed is List => !!parsed && !parsed.deletedAt);
+    const remaining = effectiveLimit - items.length;
+    const take = Math.min(pageItems.length, remaining);
 
+    items.push(...pageItems.slice(0, take));
     lastEvaluatedKey = response.LastEvaluatedKey as CursorKey | undefined;
-    if (!lastEvaluatedKey) break;
+    hasMore = take === pageItems.length && !!lastEvaluatedKey;
   }
 
   return {
@@ -453,6 +452,11 @@ export async function deleteList(
   userId: string,
   now: string,
 ): Promise<List> {
+  const existing = await getListById(id);
+  if (!existing) {
+    throw new NotFoundError(`List ${id} not found`);
+  }
+
   try {
     const response = await documentClient.send(
       new UpdateCommand({
@@ -481,9 +485,6 @@ export async function deleteList(
     if (error instanceof ConditionalCheckFailedException) {
       throw new ConflictError(`List ${id} version mismatch`);
     }
-    if (error instanceof ResourceNotFoundException) {
-      throw new NotFoundError(`List ${id} not found`);
-    }
     throw error;
   }
 }
@@ -494,6 +495,11 @@ export async function restoreList(
   userId: string,
   now: string,
 ): Promise<List> {
+  const existing = await getListById(id);
+  if (!existing) {
+    throw new NotFoundError(`List ${id} not found`);
+  }
+
   try {
     const response = await documentClient.send(
       new UpdateCommand({
@@ -522,15 +528,12 @@ export async function restoreList(
     if (error instanceof ConditionalCheckFailedException) {
       throw new ConflictError(`List ${id} version mismatch`);
     }
-    if (error instanceof ResourceNotFoundException) {
-      throw new NotFoundError(`List ${id} not found`);
-    }
     throw error;
   }
 }
 ```
 
-- [ ] **Step 2: Write repository tests**
+- [x] **Step 2: Write repository tests**
 
 创建 `apps/api/src/lists/client.test.ts`：
 
@@ -556,10 +559,7 @@ vi.mock("./client.js", () => ({
   documentClient: { send: sendMock },
 }));
 
-import {
-  ConditionalCheckFailedException,
-  ResourceNotFoundException,
-} from "@aws-sdk/client-dynamodb";
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import {
   ConflictError,
   NotFoundError,
@@ -587,6 +587,10 @@ function makeList(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const idA = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
+const idB = "b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22";
+const idC = "c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33";
+
 function makeDdbRecord(overrides: Record<string, unknown> = {}) {
   const list = makeList(overrides);
   return {
@@ -599,6 +603,11 @@ function makeDdbRecord(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function clearTableName() {
+  // biome-ignore lint/performance/noDelete: need to actually remove the env var
+  delete process.env.TABLE_NAME;
+}
+
 describe("createList", () => {
   beforeEach(() => {
     process.env.TABLE_NAME = "test-table";
@@ -606,7 +615,7 @@ describe("createList", () => {
   });
 
   afterEach(() => {
-    delete process.env.TABLE_NAME;
+    clearTableName();
   });
 
   it("creates a list with version 1 and audit fields", async () => {
@@ -636,10 +645,10 @@ describe("createList", () => {
   });
 
   it("throws if TABLE_NAME is missing", async () => {
-    delete process.env.TABLE_NAME;
+    clearTableName();
     await expect(
       createList(
-        { name: "x" },
+        { name: "x", color: "#3b82f6", icon: "list", order: 0 },
         { id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", userId: "u", now: "t" },
       ),
     ).rejects.toThrow("TABLE_NAME environment variable is not set");
@@ -653,15 +662,19 @@ describe("queryActiveLists", () => {
   });
 
   afterEach(() => {
-    delete process.env.TABLE_NAME;
+    clearTableName();
   });
 
   it("returns active lists and filters deleted", async () => {
     sendMock.mockResolvedValueOnce({
       Items: [
-        makeDdbRecord({ id: "a", name: "A" }),
-        makeDdbRecord({ id: "b", name: "B", deletedAt: "2026-01-02T00:00:00.000Z" }),
-        makeDdbRecord({ id: "c", name: "C" }),
+        makeDdbRecord({ id: idA, name: "A" }),
+        makeDdbRecord({
+          id: idB,
+          name: "B",
+          deletedAt: "2026-01-02T00:00:00.000Z",
+        }),
+        makeDdbRecord({ id: idC, name: "C" }),
       ],
     });
 
@@ -672,10 +685,21 @@ describe("queryActiveLists", () => {
     expect(result.nextCursor).toBeUndefined();
   });
 
+  it("defaults limit to 50 when not provided", async () => {
+    sendMock.mockResolvedValueOnce({
+      Items: [makeDdbRecord({ id: idA, name: "A" })],
+    });
+
+    const result = await queryActiveLists();
+
+    expect(result.items).toHaveLength(1);
+    expect(sendMock.mock.calls[0][0].input.Limit).toBe(50);
+  });
+
   it("skips malformed items", async () => {
     sendMock.mockResolvedValueOnce({
       Items: [
-        makeDdbRecord({ id: "a", name: "A" }),
+        makeDdbRecord({ id: idA, name: "A" }),
         { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
       ],
     });
@@ -692,18 +716,24 @@ describe("queryActiveLists", () => {
     expect(result.items).toEqual([]);
   });
 
+  it("handles missing Items field", async () => {
+    sendMock.mockResolvedValueOnce({});
+    const result = await queryActiveLists(50);
+    expect(result.items).toEqual([]);
+  });
+
   it("follows pages until limit is filled", async () => {
     sendMock
       .mockResolvedValueOnce({
-        Items: [makeDdbRecord({ id: "a", name: "A" })],
-        LastEvaluatedKey: { PK: "LIST#a", SK: "METADATA" },
+        Items: [makeDdbRecord({ id: idA, name: "A" })],
+        LastEvaluatedKey: { PK: `LIST#${idA}`, SK: "METADATA" },
       })
       .mockResolvedValueOnce({
-        Items: [makeDdbRecord({ id: "b", name: "B" })],
-        LastEvaluatedKey: { PK: "LIST#b", SK: "METADATA" },
+        Items: [makeDdbRecord({ id: idB, name: "B" })],
+        LastEvaluatedKey: { PK: `LIST#${idB}`, SK: "METADATA" },
       })
       .mockResolvedValueOnce({
-        Items: [makeDdbRecord({ id: "c", name: "C" })],
+        Items: [makeDdbRecord({ id: idC, name: "C" })],
       });
 
     const result = await queryActiveLists(3);
@@ -715,17 +745,44 @@ describe("queryActiveLists", () => {
 
   it("returns nextCursor when more pages remain after limit", async () => {
     sendMock.mockResolvedValueOnce({
-      Items: [makeDdbRecord({ id: "a" }), makeDdbRecord({ id: "b" })],
-      LastEvaluatedKey: { PK: "LIST#b", SK: "METADATA" },
+      Items: [makeDdbRecord({ id: idA }), makeDdbRecord({ id: idB })],
+      LastEvaluatedKey: { PK: `LIST#${idB}`, SK: "METADATA" },
     });
 
     const result = await queryActiveLists(1);
 
     expect(result.items).toHaveLength(1);
     expect(result.nextCursor).toEqual({
-      PK: "LIST#b",
+      PK: `LIST#${idB}`,
       SK: "METADATA",
     });
+  });
+
+  it("clamps limit above 100 to 100", async () => {
+    sendMock.mockResolvedValueOnce({
+      Items: Array.from({ length: 100 }, (_, i) =>
+        makeDdbRecord({ id: idA, name: `Item ${i}` }),
+      ),
+      LastEvaluatedKey: { PK: `LIST#${idA}`, SK: "METADATA" },
+    });
+
+    const result = await queryActiveLists(500);
+
+    expect(result.items).toHaveLength(100);
+    expect(sendMock.mock.calls[0][0].input.Limit).toBe(100);
+    expect(result.nextCursor).toBeDefined();
+  });
+
+  it("clamps limit below 1 to 1", async () => {
+    sendMock.mockResolvedValueOnce({
+      Items: [makeDdbRecord({ id: idA, name: "Only" })],
+      LastEvaluatedKey: { PK: `LIST#${idA}`, SK: "METADATA" },
+    });
+
+    const result = await queryActiveLists(0);
+
+    expect(result.items).toHaveLength(1);
+    expect(sendMock.mock.calls[0][0].input.Limit).toBe(1);
   });
 
   it("resumes from cursor", async () => {
@@ -746,7 +803,7 @@ describe("getListById", () => {
   });
 
   afterEach(() => {
-    delete process.env.TABLE_NAME;
+    clearTableName();
   });
 
   it("returns parsed list when found", async () => {
@@ -777,12 +834,14 @@ describe("updateList", () => {
   });
 
   afterEach(() => {
-    delete process.env.TABLE_NAME;
+    clearTableName();
   });
 
   it("updates fields and increments version", async () => {
     sendMock
-      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1, name: "Old" }) })
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({ version: 1, name: "Old" }),
+      })
       .mockResolvedValueOnce({});
 
     const result = await updateList(
@@ -819,8 +878,29 @@ describe("updateList", () => {
     );
 
     await expect(
-      updateList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", { name: "x" }, 1, "u", "t"),
+      updateList(
+        "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+        { name: "x" },
+        1,
+        "u",
+        "t",
+      ),
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("rethrows unexpected errors", async () => {
+    sendMock.mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) });
+    sendMock.mockRejectedValueOnce(new Error("dynamodb down"));
+
+    await expect(
+      updateList(
+        "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+        { name: "x" },
+        1,
+        "u",
+        "t",
+      ),
+    ).rejects.toThrow("dynamodb down");
   });
 });
 
@@ -831,13 +911,18 @@ describe("deleteList", () => {
   });
 
   afterEach(() => {
-    delete process.env.TABLE_NAME;
+    clearTableName();
   });
 
   it("sets deletedAt and increments version", async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: makeDdbRecord({ deletedAt: "2026-01-02T00:00:00.000Z", version: 2 }),
-    });
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({
+        Attributes: makeDdbRecord({
+          deletedAt: "2026-01-02T00:00:00.000Z",
+          version: 2,
+        }),
+      });
 
     const result = await deleteList(
       "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
@@ -849,41 +934,64 @@ describe("deleteList", () => {
     expect(result.deletedAt).toBe("2026-01-02T00:00:00.000Z");
     expect(result.version).toBe(2);
     expect(sendMock.mock.calls[0][0].input).toMatchObject({
+      TableName: "test-table",
+      Key: { PK: "LIST#a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", SK: "METADATA" },
+    });
+    expect(sendMock.mock.calls[1][0].input).toMatchObject({
       ConditionExpression:
         "version = :expectedVersion AND attribute_not_exists(deletedAt)",
     });
   });
 
   it("throws ConflictError on version mismatch", async () => {
-    sendMock.mockRejectedValueOnce(
-      new ConditionalCheckFailedException({
-        message: "version mismatch",
-        $metadata: {},
-      }),
-    );
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockRejectedValueOnce(
+        new ConditionalCheckFailedException({
+          message: "version mismatch",
+          $metadata: {},
+        }),
+      );
 
     await expect(
       deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
-  it("throws NotFoundError on resource not found", async () => {
-    sendMock.mockRejectedValueOnce(
-      new ResourceNotFoundException({
-        message: "not found",
-        $metadata: {},
-      }),
-    );
+  it("throws NotFoundError when list does not exist", async () => {
+    sendMock.mockResolvedValueOnce({});
 
     await expect(
       deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it("rethrows unexpected errors", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockRejectedValueOnce(new Error("dynamodb down"));
+
+    await expect(
+      deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
+    ).rejects.toThrow("dynamodb down");
+  });
+
   it("throws NotFoundError when returned attributes are malformed", async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
-    });
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({
+        Attributes: { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
+      });
+
+    await expect(
+      deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("throws NotFoundError when returned attributes are missing", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({});
 
     await expect(
       deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
@@ -898,13 +1006,15 @@ describe("restoreList", () => {
   });
 
   afterEach(() => {
-    delete process.env.TABLE_NAME;
+    clearTableName();
   });
 
   it("removes deletedAt and increments version", async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: makeDdbRecord({ version: 3 }),
-    });
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockResolvedValueOnce({
+        Attributes: makeDdbRecord({ version: 3 }),
+      });
 
     const result = await restoreList(
       "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
@@ -916,41 +1026,64 @@ describe("restoreList", () => {
     expect(result.deletedAt).toBeUndefined();
     expect(result.version).toBe(3);
     expect(sendMock.mock.calls[0][0].input).toMatchObject({
+      TableName: "test-table",
+      Key: { PK: "LIST#a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", SK: "METADATA" },
+    });
+    expect(sendMock.mock.calls[1][0].input).toMatchObject({
       ConditionExpression:
         "version = :expectedVersion AND attribute_exists(deletedAt)",
     });
   });
 
   it("throws ConflictError on version mismatch", async () => {
-    sendMock.mockRejectedValueOnce(
-      new ConditionalCheckFailedException({
-        message: "version mismatch",
-        $metadata: {},
-      }),
-    );
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockRejectedValueOnce(
+        new ConditionalCheckFailedException({
+          message: "version mismatch",
+          $metadata: {},
+        }),
+      );
 
     await expect(
       restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
-  it("throws NotFoundError on resource not found", async () => {
-    sendMock.mockRejectedValueOnce(
-      new ResourceNotFoundException({
-        message: "not found",
-        $metadata: {},
-      }),
-    );
+  it("throws NotFoundError when list does not exist", async () => {
+    sendMock.mockResolvedValueOnce({});
 
     await expect(
       restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
+  it("rethrows unexpected errors", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockRejectedValueOnce(new Error("dynamodb down"));
+
+    await expect(
+      restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
+    ).rejects.toThrow("dynamodb down");
+  });
+
   it("throws NotFoundError when returned attributes are malformed", async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
-    });
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockResolvedValueOnce({
+        Attributes: { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
+      });
+
+    await expect(
+      restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("throws NotFoundError when returned attributes are missing", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockResolvedValueOnce({});
 
     await expect(
       restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
@@ -959,12 +1092,12 @@ describe("restoreList", () => {
 });
 ```
 
-- [ ] **Step 3: Run repository tests**
+- [x] **Step 3: Run repository tests**
 
 Run: `bun run test -- --project apps/api src/lists/db.test.ts`
 Expected: PASS, coverage 100% for `db.ts` and `client.ts`。
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/api/src/lists/client.ts apps/api/src/lists/client.test.ts apps/api/src/lists/db.ts apps/api/src/lists/db.test.ts
@@ -988,14 +1121,16 @@ git commit -m "feat(api): add list dynamodb repository"
 - Consumes: `db.ts` 导出的全部 mutation/query 函数与错误类；`packages/shared` 的 schema / response / cursor / validate 工具。
 - Produces: Lambda handler `lists/index.handler` 处理 `GET/POST/PATCH/DELETE /api/lists*` 与 `POST /api/lists/{id}/restore`。
 
-- [ ] **Step 1: Write handler tests first**
+- [x] **Step 1: Write handler tests first**
 
 创建 `apps/api/src/lists/index.test.ts`：
 
 ```typescript
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const randomUUIDMock = vi.hoisted(() => vi.fn(() => "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"));
+const randomUUIDMock = vi.hoisted(() =>
+  vi.fn(() => "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"),
+);
 
 vi.mock("node:crypto", () => ({
   randomUUID: randomUUIDMock,
@@ -1020,6 +1155,7 @@ import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyHandlerV2WithJWTAuthorizer,
 } from "aws-lambda";
+import { ConflictError, NotFoundError } from "./db.js";
 import { handler } from "./index.js";
 
 function createEvent(
@@ -1039,7 +1175,6 @@ function createEvent(
     queryStringParameters: options.query ?? {},
     body: options.body ?? undefined,
     requestContext: {
-      domainId: "",
       domainName: "",
       domainPrefix: "",
       http: {
@@ -1094,7 +1229,9 @@ describe("lists handler", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
-    Object.values(dbMock).forEach((m) => m.mockReset());
+    for (const mock of Object.values(dbMock)) {
+      mock.mockReset();
+    }
   });
 
   afterEach(() => {
@@ -1147,7 +1284,9 @@ describe("lists handler", () => {
     expect(result.statusCode).toBe(200);
     const body = JSON.parse(result.body ?? "{}");
     expect(body.items).toEqual([mockList]);
-    expect(body.nextCursor).toBe(encodeCursor({ PK: "LIST#x", SK: "METADATA" }));
+    expect(body.nextCursor).toBe(
+      encodeCursor({ PK: "LIST#x", SK: "METADATA" }),
+    );
     expect(dbMock.queryActiveLists).toHaveBeenCalledWith(10, undefined);
   });
 
@@ -1164,7 +1303,9 @@ describe("lists handler", () => {
     dbMock.queryActiveLists.mockResolvedValueOnce({ items: [] });
     const cursor = encodeCursor({ PK: "LIST#x", SK: "METADATA" });
 
-    await invokeHandler(createEvent("GET", "/api/lists", { query: { cursor } }));
+    await invokeHandler(
+      createEvent("GET", "/api/lists", { query: { cursor } }),
+    );
 
     expect(dbMock.queryActiveLists).toHaveBeenCalledWith(50, {
       PK: "LIST#x",
@@ -1173,7 +1314,11 @@ describe("lists handler", () => {
   });
 
   it("updates a list", async () => {
-    dbMock.updateList.mockResolvedValueOnce({ ...mockList, name: "新名称", version: 2 });
+    dbMock.updateList.mockResolvedValueOnce({
+      ...mockList,
+      name: "新名称",
+      version: 2,
+    });
 
     const result = await invokeHandler(
       createEvent("PATCH", "/api/lists/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", {
@@ -1260,7 +1405,9 @@ describe("lists handler", () => {
   });
 
   it("returns 409 on conflict error", async () => {
-    dbMock.updateList.mockRejectedValueOnce(new (class extends Error {})());
+    dbMock.updateList.mockRejectedValueOnce(
+      new ConflictError("version mismatch"),
+    );
     const result = await invokeHandler(
       createEvent("PATCH", "/api/lists/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", {
         body: JSON.stringify({ name: "x", expectedVersion: 1 }),
@@ -1272,7 +1419,7 @@ describe("lists handler", () => {
   });
 
   it("returns 404 on not found", async () => {
-    dbMock.deleteList.mockRejectedValueOnce(new (class extends Error {})());
+    dbMock.deleteList.mockRejectedValueOnce(new NotFoundError("not found"));
     const result = await invokeHandler(
       createEvent("DELETE", "/api/lists/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", {
         query: { expectedVersion: "1" },
@@ -1292,8 +1439,22 @@ describe("lists handler", () => {
     expect(JSON.parse(result.body ?? "{}").code).toBe("VALIDATION_ERROR");
   });
 
+  it("returns 400 when body is missing", async () => {
+    const result = await invokeHandler(
+      createEvent(
+        "POST",
+        "/api/lists/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/restore",
+      ),
+    );
+
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body ?? "{}").code).toBe("VALIDATION_ERROR");
+  });
+
   it("returns 404 for unknown route", async () => {
-    const result = await invokeHandler(createEvent("GET", "/api/lists/unknown/route"));
+    const result = await invokeHandler(
+      createEvent("GET", "/api/lists/unknown/route"),
+    );
     expect(result.statusCode).toBe(404);
   });
 
@@ -1314,6 +1475,16 @@ describe("lists handler", () => {
     expect(result.statusCode).toBe(200);
   });
 
+  it("falls back to unknown user id when sub is not a string", async () => {
+    const event = createEvent("GET", "/api/lists");
+    (event.requestContext.authorizer.jwt.claims as { sub?: unknown }).sub = 123;
+    dbMock.queryActiveLists.mockResolvedValueOnce({ items: [] });
+
+    const result = await invokeHandler(event);
+
+    expect(result.statusCode).toBe(200);
+  });
+
   it("is typed as APIGatewayProxyHandlerV2WithJWTAuthorizer", () => {
     const typed: APIGatewayProxyHandlerV2WithJWTAuthorizer = handler;
     expect(typed).toBeDefined();
@@ -1321,17 +1492,19 @@ describe("lists handler", () => {
 });
 ```
 
-- [ ] **Step 2: Run handler tests to verify they fail**
+- [x] **Step 2: Run handler tests to verify they fail**
 
 Run: `bun run test -- --project apps/api src/lists/index.test.ts`
 Expected: FAIL with handler not found / missing exports.
 
-- [ ] **Step 3: Write minimal handler implementation**
+- [x] **Step 3: Write minimal handler implementation**
 
 创建 `apps/api/src/lists/index.ts`：
 
 ```typescript
+import { randomUUID } from "node:crypto";
 import {
+  CursorError,
   type CursorKey,
   ValidationError,
   buildResponse,
@@ -1349,7 +1522,6 @@ import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyHandlerV2WithJWTAuthorizer,
 } from "aws-lambda";
-import { randomUUID } from "node:crypto";
 import {
   ConflictError,
   NotFoundError,
@@ -1361,8 +1533,9 @@ import {
 } from "./db.js";
 
 function getUserId(event: APIGatewayProxyEventV2WithJWTAuthorizer): string {
-  const sub = event.requestContext.authorizer.jwt.claims.sub;
-  return typeof sub === "string" ? sub : "unknown";
+  return typeof event.requestContext.authorizer.jwt.claims.sub === "string"
+    ? event.requestContext.authorizer.jwt.claims.sub
+    : "unknown";
 }
 
 function parseBody(body: string | undefined): unknown {
@@ -1434,10 +1607,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
     const restoreMatch = /^\/api\/lists\/([0-9a-f-]+)\/restore$/.exec(path);
     if (restoreMatch && method === "POST") {
       const id = restoreMatch[1];
-      const body = parseRequest(
-        listRestoreBodySchema,
-        parseBody(event.body),
-      );
+      const body = parseRequest(listRestoreBodySchema, parseBody(event.body));
       const list = await restoreList(id, body.expectedVersion, userId, now);
       return buildResponse(200, list);
     }
@@ -1453,18 +1623,21 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
     if (error instanceof ConflictError) {
       return errorResponse(error.message, "CONFLICT", 409);
     }
+    if (error instanceof CursorError) {
+      return errorResponse(error.message, "INVALID_CURSOR", 400);
+    }
     console.error(error);
     return errorResponse("failed to process list request");
   }
 };
 ```
 
-- [ ] **Step 4: Run handler tests to verify they pass**
+- [x] **Step 4: Run handler tests to verify they pass**
 
 Run: `bun run test -- --project apps/api src/lists/index.test.ts`
 Expected: PASS, coverage 100% for `index.ts`。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/lists/index.ts apps/api/src/lists/index.test.ts
@@ -1481,19 +1654,28 @@ git commit -m "feat(api): implement list crud and restore handler"
 > Covers: 验收标准手动验证；非自动化测试要求，但需补齐集合。
 
 **Files:**
-- Create: `bruno/lists/list-lists.bru`
-- Create: `bruno/lists/create-list.bru`
-- Create: `bruno/lists/update-list.bru`
-- Create: `bruno/lists/delete-list.bru`
-- Create: `bruno/lists/restore-list.bru`
+- Create: `bruno/lyco-list/lists/folder.bru`
+- Create: `bruno/lyco-list/lists/list lists.bru`
+- Create: `bruno/lyco-list/lists/create list.bru`
+- Create: `bruno/lyco-list/lists/update list.bru`
+- Create: `bruno/lyco-list/lists/delete list.bru`
+- Create: `bruno/lyco-list/lists/restore list.bru`
 
 **Interfaces:**
-- Consumes: 已存在的 Bruno 环境变量 `BRUNO_ACCESS_TOKEN`（ticket 001 约定）。
-- Produces: 5 个 `.bru` 请求文件。
+- Consumes: collection 级 bearer 认证（`bruno/lyco-list/collection.bru` 使用环境 secret `{{accessToken}}`，ticket 001 约定），请求以 `auth: inherit` 继承。
+- Produces: 5 个 `.bru` 请求文件与 1 个 `folder.bru`。
 
-- [ ] **Step 1: Create Bruno folder and files**
+- [x] **Step 1: Create Bruno folder and files**
 
-创建 `bruno/lists/list-lists.bru`：
+创建 `bruno/lyco-list/lists/folder.bru`：
+
+```
+meta {
+  name: lists
+}
+```
+
+创建 `bruno/lyco-list/lists/list lists.bru`：
 
 ```
 meta {
@@ -1505,19 +1687,15 @@ meta {
 get {
   url: {{baseUrl}}/api/lists?limit=50
   body: none
-  auth: bearer
+  auth: inherit
 }
 
 params:query {
   limit: 50
 }
-
-auth:bearer {
-  token: {{process.env.BRUNO_ACCESS_TOKEN}}
-}
 ```
 
-创建 `bruno/lists/create-list.bru`：
+创建 `bruno/lyco-list/lists/create list.bru`：
 
 ```
 meta {
@@ -1529,11 +1707,7 @@ meta {
 post {
   url: {{baseUrl}}/api/lists
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{process.env.BRUNO_ACCESS_TOKEN}}
+  auth: inherit
 }
 
 body:json {
@@ -1546,7 +1720,7 @@ body:json {
 }
 ```
 
-创建 `bruno/lists/update-list.bru`：
+创建 `bruno/lyco-list/lists/update list.bru`：
 
 ```
 meta {
@@ -1558,11 +1732,7 @@ meta {
 patch {
   url: {{baseUrl}}/api/lists/{{listId}}
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{process.env.BRUNO_ACCESS_TOKEN}}
+  auth: inherit
 }
 
 body:json {
@@ -1573,7 +1743,7 @@ body:json {
 }
 ```
 
-创建 `bruno/lists/delete-list.bru`：
+创建 `bruno/lyco-list/lists/delete list.bru`：
 
 ```
 meta {
@@ -1585,19 +1755,15 @@ meta {
 delete {
   url: {{baseUrl}}/api/lists/{{listId}}?expectedVersion=2
   body: none
-  auth: bearer
+  auth: inherit
 }
 
 params:query {
   expectedVersion: 2
 }
-
-auth:bearer {
-  token: {{process.env.BRUNO_ACCESS_TOKEN}}
-}
 ```
 
-创建 `bruno/lists/restore-list.bru`：
+创建 `bruno/lyco-list/lists/restore list.bru`：
 
 ```
 meta {
@@ -1609,11 +1775,7 @@ meta {
 post {
   url: {{baseUrl}}/api/lists/{{listId}}/restore
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{process.env.BRUNO_ACCESS_TOKEN}}
+  auth: inherit
 }
 
 body:json {
@@ -1623,16 +1785,16 @@ body:json {
 }
 ```
 
-- [ ] **Step 2: Verify Biome formatting**
+- [x] **Step 2: Verify Biome formatting**
 
-Run: `bunx @biomejs/biome check bruno/lists`
+Run: `bunx @biomejs/biome check bruno/lyco-list/lists`
 Expected: no errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
-git add bruno/lists
-bunx @biomejs/biome check --write bruno/lists
+git add bruno/lyco-list/lists
+bunx @biomejs/biome check --write bruno/lyco-list/lists
 git commit -m "docs(bruno): add list crud and restore requests"
 ```
 
@@ -1645,12 +1807,12 @@ git commit -m "docs(bruno): add list crud and restore requests"
 **Files:**
 - 不新增文件；只运行命令。
 
-- [ ] **Step 1: Run full test suite with coverage**
+- [x] **Step 1: Run full test suite with coverage**
 
 Run: `bun run test`
 Expected: all projects pass, coverage thresholds 100%.
 
-- [ ] **Step 2: Run typecheck**
+- [x] **Step 2: Run typecheck**
 
 Run:
 ```bash
@@ -1659,12 +1821,12 @@ bunx tsc --noEmit -p packages/shared/tsconfig.json
 ```
 Expected: no errors.
 
-- [ ] **Step 3: Run Biome check**
+- [x] **Step 3: Run Biome check**
 
 Run: `bunx @biomejs/biome check`
 Expected: no errors.
 
-- [ ] **Step 4: Commit if any fixes**
+- [x] **Step 4: Commit if any fixes**
 
 ```bash
 # 仅当 Step 1-3 中发现并修复了问题时提交
@@ -1709,6 +1871,12 @@ git commit -m "fix(api): address review and coverage gaps in lists lambda"
 ## Sync Back to Ticket and Source
 
 无需修改 `ticket.md` 或设计文档：本 plan 完全遵循 ticket 范围与设计文档的列表键设计、软删除规则、版本规则。
+
+> **实施后审计回写（2026-07-17）**：实现合并（PR #10）后执行 plan ↔ implementation 一致性审计，发现 4 处实现偏离，已将本 plan 的代码块与步骤同步为最终实现：
+> 1. Bruno 请求归入 `bruno/lyco-list/lists/` collection，使用 `auth: inherit` 继承 collection 级 bearer 认证，并补充 `folder.bru`（commit `e0f7332`、`3021a9f`）。
+> 2. `queryActiveLists` 增加 `limit = 50` 默认值并将 `limit` clamp 到 [1, 100]（commit `d51102e`、`f76b4cd`）。
+> 3. `deleteList` / `restoreList` 增加 `getListById` 前置存在性检查，移除 `ResourceNotFoundException` 分支（DynamoDB `UpdateCommand` 对不存在的 item 会创建新 item，原方案有缺陷）（commit `f76b4cd`）。
+> 4. handler 错误链补充 `CursorError → 400 INVALID_CURSOR` 分支（`CursorError` 直接继承 `Error`，原 catch 链会落入 500）（commit `95d6c8a`）。
 
 ---
 

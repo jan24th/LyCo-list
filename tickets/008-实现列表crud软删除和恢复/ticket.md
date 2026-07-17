@@ -1,7 +1,7 @@
 ---
 Title: 实现列表 CRUD、软删除和恢复
 ID: 008
-Status: TODO
+Status: COMPLETED
 Labels: api,lists
 Estimate: 5
 Depends: 003,006
