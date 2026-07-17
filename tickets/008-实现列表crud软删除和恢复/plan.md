@@ -191,7 +191,11 @@ Expected: FAIL with exports not found.
 在 `packages/shared/src/schema/lists/index.ts` 末尾追加：
 
 ```typescript
-export const listUpdateBodySchema = listUpdateSchema.extend({
+export const listUpdateBodySchema = z.object({
+  name: listBaseSchema.shape.name.optional(),
+  color: listBaseSchema.shape.color.removeDefault().optional(),
+  icon: listBaseSchema.shape.icon.removeDefault().optional(),
+  order: listBaseSchema.shape.order.removeDefault().optional(),
   expectedVersion: z.number().int().nonnegative(),
 });
 
@@ -1413,7 +1417,8 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
 
       if (method === "PATCH") {
         const body = parseRequest(listUpdateBodySchema, parseBody(event.body));
-        const list = await updateList(id, body, body.expectedVersion, userId, now);
+        const { expectedVersion, ...input } = body;
+        const list = await updateList(id, input, expectedVersion, userId, now);
         return buildResponse(200, list);
       }
 
