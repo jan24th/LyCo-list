@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  CursorError,
   type CursorKey,
   ValidationError,
   buildResponse,
@@ -118,7 +119,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
     if (error instanceof ConflictError) {
       return errorResponse(error.message, "CONFLICT", 409);
     }
-    if (error instanceof Error && error.name === "CursorError") {
+    if (error instanceof CursorError) {
       return errorResponse(error.message, "INVALID_CURSOR", 400);
     }
     console.error(error);
