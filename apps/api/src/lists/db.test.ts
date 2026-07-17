@@ -132,6 +132,17 @@ describe("queryActiveLists", () => {
     expect(result.nextCursor).toBeUndefined();
   });
 
+  it("defaults limit to 50 when not provided", async () => {
+    sendMock.mockResolvedValueOnce({
+      Items: [makeDdbRecord({ id: idA, name: "A" })],
+    });
+
+    const result = await queryActiveLists();
+
+    expect(result.items).toHaveLength(1);
+    expect(sendMock.mock.calls[0][0].input.Limit).toBe(50);
+  });
+
   it("skips malformed items", async () => {
     sendMock.mockResolvedValueOnce({
       Items: [

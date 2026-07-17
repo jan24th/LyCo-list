@@ -89,7 +89,7 @@ export async function createList(
 }
 
 export async function queryActiveLists(
-  limit: number,
+  limit = 50,
   cursor?: CursorKey,
 ): Promise<{ items: List[]; nextCursor?: CursorKey }> {
   const effectiveLimit = Math.min(Math.max(limit, 1), 100);
