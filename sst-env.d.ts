@@ -10,6 +10,10 @@ declare module "sst" {
       "type": "sst.aws.ApiGatewayV2"
       "url": string
     }
+    "LycoTable": {
+      "name": string
+      "type": "sst.aws.Dynamo"
+    }
     "UserPool": {
       "id": string
       "type": "sst.aws.CognitoUserPool"
