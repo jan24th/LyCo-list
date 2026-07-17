@@ -94,7 +94,7 @@ LyCo-list/
 - **Assign 任务**：一个任务可以 assign 给多个用户；任务完成状态为整体状态；创建任务时即可选择 assignee。
 - **分配通知**：被 assign 时通过浏览器通知告知被分配者；用户查看后标记已读。
 - **无级嵌套子任务**：子任务与父任务功能对等；父任务完成时提示是否一键完成子任务。
-- **自定义列表**：名称、颜色、图标、手动排序。
+- **自定义列表**：名称、颜色、手动排序。
 - **智能列表**：今天、计划、全部、已标记、已完成、**分配给我**。
 - **搜索**：基于标题和备注的 Unicode 规范化、大小写不敏感包含匹配（后端实现）。
 - **重复任务与提醒**：无、每天、每周、每两周、每月、每年、工作日。
@@ -259,7 +259,7 @@ cleanup Lambda ───────────────► DynamoDB
 | GSI1PK | `LISTS`                          |
 | GSI1SK | `ORDER#<orderKey>#LIST#<listId>` |
 
-属性：`name`, `color`, `icon`, `order`, `version`, `deletedAt`, `undoUntil`, `deletionVersion`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`。
+属性：`name`, `color`, `order`, `version`, `deletedAt`, `undoUntil`, `deletionVersion`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`。
 
 > **阶段说明**：在 008（列表 CRUD）阶段，列表软删除仅写入 `deletedAt` 并递增 `version`；`undoUntil`、`deletionVersion` 及 `DELETION_JOB` 在 018（cleanup Lambda）阶段统一引入。任务软删除在 010 阶段实现，可采用完整字段。
 
@@ -371,7 +371,6 @@ interface List {
   id: string;
   name: string;
   color: string;
-  icon: string;
   order: number;
   version: number;
   deletedAt?: string;
