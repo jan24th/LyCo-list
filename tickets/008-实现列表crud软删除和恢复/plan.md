@@ -77,7 +77,7 @@ api.route(
     permissions: [
       {
         actions: ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Query"],
-        resources: [table.arn, `${table.arn}/index/GSI1`],
+        resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
       },
     ],
   },
