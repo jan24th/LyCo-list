@@ -71,6 +71,22 @@ export default $config({
       domain: domain.api,
     });
 
+    const table = new sst.aws.DynamoDB("LycoTable", {
+      fields: {
+        PK: "string",
+        SK: "string",
+        GSI1PK: "string",
+        GSI1SK: "string",
+      },
+      primaryIndex: { hashKey: "PK", rangeKey: "SK" },
+      globalIndexes: {
+        GSI1: { hashKey: "GSI1PK", rangeKey: "GSI1SK" },
+      },
+      ttl: {
+        attribute: "expiresAtEpoch",
+      },
+    });
+
     const callbackUrls = ((): string[] => {
       if (isCustomDomainStage && baseDomain) {
         return [`https://app.${stagePrefix}${baseDomain}/callback`];
@@ -146,6 +162,35 @@ export default $config({
           {
             actions: ["cognito-idp:ListUsers"],
             resources: [userPool.arn],
+          },
+        ],
+      },
+      {
+        auth: {
+          jwt: {
+            authorizer: cognitoAuthorizer.id,
+          },
+        },
+      },
+    );
+
+    api.route(
+      "ANY /api/lists/{proxy+}",
+      {
+        handler: "apps/api/src/lists/index.handler",
+        runtime: "nodejs22.x",
+        environment: {
+          TABLE_NAME: table.name,
+        },
+        permissions: [
+          {
+            actions: [
+              "dynamodb:GetItem",
+              "dynamodb:PutItem",
+              "dynamodb:UpdateItem",
+              "dynamodb:Query",
+            ],
+            resources: [table.arn, `${table.arn}/index/GSI1`],
           },
         ],
       },
