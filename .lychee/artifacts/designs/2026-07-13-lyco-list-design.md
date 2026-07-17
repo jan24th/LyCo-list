@@ -750,6 +750,8 @@ API Gateway HTTP API 的 CORS 按 `$app.stage` 配置：
 2. 配置 Cognito User Pool、User Pool Client、Hosted UI 自定义域名，关闭公开注册。
 3. 定义可按实体 ID 直接读取的 DynamoDB 单表、1 个 GSI、TTL 和乐观版本字段。
 4. 前端脚手架：React + Vite + TypeScript + Tailwind + shadcn/ui + TanStack Router/Query/Store/Form + Vitest。
+   - 004B 完成 shadcn/ui 初始化与基础组件预算：补齐 light/dark 语义 token、系统主题、圆角、动画、aliases，并预装 Phase 1 高确定性基础组件；Calendar 与 Command 仅登记预算，待对应交互设计确定后添加。
+   - 004A 实现响应式应用壳与移动端导航骨架：桌面端固定侧栏插槽，移动端顶部标题栏 + Sheet 导航抽屉，并统一安全区域、触控尺寸和内容区溢出约束。004A 依赖 004B，后续前端页面复用该应用壳。
 5. 前端认证与 Cognito Hosted UI 回调处理：登录/登出状态、token 刷新、**401 重定向处理**。
 6. 实现 `/api/health` 接口。
 7. 实现 `/api/users/assignees` 接口（返回可选 assignee 列表）。
