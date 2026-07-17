@@ -1,0 +1,19 @@
+meta {
+  name: list lists
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/lists?limit=50
+  body: none
+  auth: bearer
+}
+
+params:query {
+  limit: 50
+}
+
+auth:bearer {
+  token: {{process.env.BRUNO_ACCESS_TOKEN}}
+}

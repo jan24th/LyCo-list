@@ -1,0 +1,24 @@
+meta {
+  name: create list
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/lists
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{process.env.BRUNO_ACCESS_TOKEN}}
+}
+
+body:json {
+  {
+    "name": "购物",
+    "color": "#3b82f6",
+    "icon": "list",
+    "order": 0
+  }
+}

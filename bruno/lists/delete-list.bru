@@ -1,0 +1,19 @@
+meta {
+  name: delete list
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/lists/{{listId}}?expectedVersion=2
+  body: none
+  auth: bearer
+}
+
+params:query {
+  expectedVersion: 2
+}
+
+auth:bearer {
+  token: {{process.env.BRUNO_ACCESS_TOKEN}}
+}
