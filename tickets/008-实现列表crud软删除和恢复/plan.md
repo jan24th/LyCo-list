@@ -66,29 +66,31 @@ const table = new sst.aws.Dynamo("LycoTable", {
 然后在文件末尾、其他 `api.route(...)` 之后添加列表路由：
 
 ```typescript
-api.route(
-  "ANY /api/lists/{proxy+}",
-  {
-    handler: "apps/api/src/lists/index.handler",
-    runtime: "nodejs22.x",
-    environment: {
-      TABLE_NAME: table.name,
-    },
-    permissions: [
-      {
-        actions: ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Query"],
-        resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
-      },
-    ],
+const listHandler = {
+  handler: "apps/api/src/lists/index.handler",
+  runtime: "nodejs22.x",
+  environment: {
+    TABLE_NAME: table.name,
   },
-  {
-    auth: {
-      jwt: {
-        authorizer: cognitoAuthorizer.id,
-      },
+  permissions: [
+    {
+      actions: ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Query"],
+      resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
+    },
+  ],
+};
+
+const listAuth = {
+  auth: {
+    jwt: {
+      authorizer: cognitoAuthorizer.id,
     },
   },
-);
+};
+
+api.route("GET /api/lists", listHandler, listAuth);
+api.route("POST /api/lists", listHandler, listAuth);
+api.route("ANY /api/lists/{proxy+}", listHandler, listAuth);
 ```
 
 - [ ] **Step 3: Verify SST config type-checks**
