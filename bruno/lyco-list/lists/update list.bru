@@ -7,11 +7,7 @@ meta {
 patch {
   url: {{baseUrl}}/api/lists/{{listId}}
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{process.env.BRUNO_ACCESS_TOKEN}}
+  auth: inherit
 }
 
 body:json {

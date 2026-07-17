@@ -7,11 +7,7 @@ meta {
 post {
   url: {{baseUrl}}/api/lists
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{process.env.BRUNO_ACCESS_TOKEN}}
+  auth: inherit
 }
 
 body:json {

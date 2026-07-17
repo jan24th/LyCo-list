@@ -7,13 +7,9 @@ meta {
 delete {
   url: {{baseUrl}}/api/lists/{{listId}}?expectedVersion=2
   body: none
-  auth: bearer
+  auth: inherit
 }
 
 params:query {
   expectedVersion: 2
-}
-
-auth:bearer {
-  token: {{process.env.BRUNO_ACCESS_TOKEN}}
 }
