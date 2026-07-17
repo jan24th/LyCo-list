@@ -8,7 +8,6 @@ const mockList: List = {
   id: "list-1",
   name: "购物",
   color: "#3b82f6",
-  icon: "list",
   order: 0,
   version: 1,
   createdAt: "2026-01-01T00:00:00.000Z",

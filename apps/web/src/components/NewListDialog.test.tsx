@@ -18,7 +18,7 @@ vi.mock("@/hooks/use-lists.js", () => ({
 }));
 
 describe("NewListDialog", () => {
-  it("creates a list when form is submitted", async () => {
+  it("creates a list with selected color", async () => {
     const user = userEvent.setup();
     const mutate = vi.fn((_input, options) => {
       options?.onSuccess?.();
@@ -35,18 +35,38 @@ describe("NewListDialog", () => {
     fireEvent.change(screen.getByLabelText("名称"), {
       target: { value: "购物" },
     });
-    fireEvent.change(screen.getByLabelText("颜色"), {
-      target: { value: "#ef4444" },
-    });
-    fireEvent.change(screen.getByLabelText("图标"), {
-      target: { value: "briefcase" },
-    });
+    await user.click(screen.getByRole("button", { name: "红色" }));
     await user.click(screen.getByText("创建"));
 
     await waitFor(() => expect(mutate).toHaveBeenCalled());
     expect(mutate).toHaveBeenCalledWith(
-      { name: "购物", color: "#ef4444", icon: "briefcase", order: 0 },
+      { name: "购物", color: "#ef4444", order: 0 },
       expect.any(Object),
+    );
+  });
+
+  it("uses default color when none is selected", async () => {
+    const user = userEvent.setup();
+    const mutate = vi.fn();
+    mockUseCreateListMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+      error: null,
+    });
+
+    renderWithQuery(<NewListDialog />);
+
+    await user.click(screen.getByText("新建列表"));
+    fireEvent.change(screen.getByLabelText("名称"), {
+      target: { value: "购物" },
+    });
+    await user.click(screen.getByText("创建"));
+
+    await waitFor(() =>
+      expect(mutate).toHaveBeenCalledWith(
+        { name: "购物", color: "#3b82f6", order: 0 },
+        expect.any(Object),
+      ),
     );
   });
 

@@ -78,7 +78,6 @@ describe("useCreateListMutation", () => {
       result.current.mutation.mutate({
         name: "工作",
         color: "#ef4444",
-        icon: "briefcase",
         order: 1,
       });
     });
@@ -88,7 +87,6 @@ describe("useCreateListMutation", () => {
       {
         name: "工作",
         color: "#ef4444",
-        icon: "briefcase",
         order: 1,
       },
       expect.anything(),

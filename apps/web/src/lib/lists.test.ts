@@ -53,7 +53,6 @@ describe("createList", () => {
     const result = await createList({
       name: "工作",
       color: "#ef4444",
-      icon: "briefcase",
       order: 1,
     });
 
@@ -62,7 +61,6 @@ describe("createList", () => {
       body: JSON.stringify({
         name: "工作",
         color: "#ef4444",
-        icon: "briefcase",
         order: 1,
       }),
     });

@@ -9,14 +9,14 @@ import {
 import { Input } from "@/components/ui/input.js";
 import { Label } from "@/components/ui/label.js";
 import { useCreateListMutation } from "@/hooks/use-lists.js";
+import { DEFAULT_LIST_COLOR, LIST_COLORS } from "@/lib/list-colors.js";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
 export function NewListDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#3b82f6");
-  const [icon, setIcon] = useState("list");
+  const [color, setColor] = useState<string>(DEFAULT_LIST_COLOR);
   const { mutate, isPending, error } = useCreateListMutation();
 
   function handleSubmit(event: React.FormEvent) {
@@ -25,13 +25,12 @@ export function NewListDialog() {
     if (!trimmed) return;
 
     mutate(
-      { name: trimmed, color, icon, order: 0 },
+      { name: trimmed, color, order: 0 },
       {
         onSuccess: () => {
           setOpen(false);
           setName("");
-          setColor("#3b82f6");
-          setIcon("list");
+          setColor(DEFAULT_LIST_COLOR);
         },
       },
     );
@@ -50,7 +49,7 @@ export function NewListDialog() {
           <DialogTitle>新建列表</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="list-name">名称</Label>
             <Input
               id="list-name"
@@ -59,28 +58,32 @@ export function NewListDialog() {
               placeholder="列表名称"
             />
           </div>
-          <div>
-            <Label htmlFor="list-color">颜色</Label>
-            <Input
-              id="list-color"
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="list-icon">图标</Label>
-            <Input
-              id="list-icon"
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              placeholder="list"
-            />
+          <div className="space-y-2">
+            <Label>颜色</Label>
+            <div className="flex gap-2">
+              {LIST_COLORS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-label={option.name}
+                  aria-pressed={color === option.value}
+                  onClick={() => setColor(option.value)}
+                  className={`h-7 w-7 rounded-full transition-shadow ${
+                    color === option.value
+                      ? "ring-2 ring-slate-900 ring-offset-2"
+                      : ""
+                  }`}
+                  style={{ backgroundColor: option.value }}
+                />
+              ))}
+            </div>
           </div>
           {error && <p className="text-sm text-red-600">{error.message}</p>}
-          <Button type="submit" disabled={isPending || !name.trim()}>
-            创建
-          </Button>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isPending || !name.trim()}>
+              创建
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
