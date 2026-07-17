@@ -1,4 +1,6 @@
+import { createTestQueryClient } from "@/lib/test-utils.js";
 import { routeTree } from "@/routeTree.gen";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
   RouterProvider,
   createMemoryHistory,
@@ -13,7 +15,11 @@ async function renderRouter(initialUrl: string) {
   const memoryHistory = createMemoryHistory({ initialEntries: [initialUrl] });
   const router = createRouter({ routeTree, history: memoryHistory });
   await router.load();
-  return render(<RouterProvider router={router} />);
+  return render(
+    <QueryClientProvider client={createTestQueryClient()}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
 }
 
 describe("About route", () => {
@@ -25,6 +31,8 @@ describe("About route", () => {
   it("navigates back to home", async () => {
     await renderRouter("/about");
     await screen.getByRole("button", { name: "返回" }).click();
-    expect(await screen.findByText("今天")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "今天" }),
+    ).toBeInTheDocument();
   });
 });

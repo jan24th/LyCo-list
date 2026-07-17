@@ -1,4 +1,6 @@
+import { createTestQueryClient } from "@/lib/test-utils.js";
 import { routeTree } from "@/routeTree.gen";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
   RouterProvider,
   createMemoryHistory,
@@ -31,7 +33,11 @@ async function renderRouter(initialUrl: string) {
   const memoryHistory = createMemoryHistory({ initialEntries: [initialUrl] });
   const router = createRouter({ routeTree, history: memoryHistory });
   await router.load();
-  return render(<RouterProvider router={router} />);
+  return render(
+    <QueryClientProvider client={createTestQueryClient()}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
 }
 
 describe("Home route", () => {
@@ -51,7 +57,11 @@ describe("Home route", () => {
 
   it("displays API verify result when button is clicked", async () => {
     mockGetCurrentUser.mockResolvedValue({ userId: "user-456" });
-    mockApiClient.mockResolvedValue({ userId: "api-user-789" });
+    mockApiClient.mockImplementation((path: string) =>
+      path.startsWith("/api/lists")
+        ? Promise.resolve({ items: [] })
+        : Promise.resolve({ userId: "api-user-789" }),
+    );
 
     await renderRouter("/");
     fireEvent.click(screen.getByRole("button", { name: "验证 API" }));
