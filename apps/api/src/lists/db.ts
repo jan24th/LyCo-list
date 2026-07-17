@@ -1,7 +1,4 @@
-import {
-  ConditionalCheckFailedException,
-  ResourceNotFoundException,
-} from "@aws-sdk/client-dynamodb";
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import {
   GetCommand,
   PutCommand,
@@ -95,18 +92,19 @@ export async function queryActiveLists(
   limit: number,
   cursor?: CursorKey,
 ): Promise<{ items: List[]; nextCursor?: CursorKey }> {
+  const effectiveLimit = Math.min(Math.max(limit, 1), 100);
   const items: List[] = [];
   let lastEvaluatedKey: CursorKey | undefined = cursor;
   let hasMore = true;
 
-  while (hasMore && items.length < limit) {
+  while (hasMore && items.length < effectiveLimit) {
     const response: QueryCommandOutput = await documentClient.send(
       new QueryCommand({
         TableName: getTableName(),
         IndexName: "GSI1",
         KeyConditionExpression: "GSI1PK = :pk",
         ExpressionAttributeValues: { ":pk": "LISTS" },
-        Limit: limit - items.length,
+        Limit: effectiveLimit - items.length,
         ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
       }),
     );
@@ -114,7 +112,7 @@ export async function queryActiveLists(
     const pageItems = (response.Items ?? [])
       .map(toList)
       .filter((parsed): parsed is List => !!parsed && !parsed.deletedAt);
-    const remaining = limit - items.length;
+    const remaining = effectiveLimit - items.length;
     const take = Math.min(pageItems.length, remaining);
 
     items.push(...pageItems.slice(0, take));
@@ -184,6 +182,11 @@ export async function deleteList(
   userId: string,
   now: string,
 ): Promise<List> {
+  const existing = await getListById(id);
+  if (!existing) {
+    throw new NotFoundError(`List ${id} not found`);
+  }
+
   try {
     const response = await documentClient.send(
       new UpdateCommand({
@@ -212,9 +215,6 @@ export async function deleteList(
     if (error instanceof ConditionalCheckFailedException) {
       throw new ConflictError(`List ${id} version mismatch`);
     }
-    if (error instanceof ResourceNotFoundException) {
-      throw new NotFoundError(`List ${id} not found`);
-    }
     throw error;
   }
 }
@@ -225,6 +225,11 @@ export async function restoreList(
   userId: string,
   now: string,
 ): Promise<List> {
+  const existing = await getListById(id);
+  if (!existing) {
+    throw new NotFoundError(`List ${id} not found`);
+  }
+
   try {
     const response = await documentClient.send(
       new UpdateCommand({
@@ -252,9 +257,6 @@ export async function restoreList(
   } catch (error) {
     if (error instanceof ConditionalCheckFailedException) {
       throw new ConflictError(`List ${id} version mismatch`);
-    }
-    if (error instanceof ResourceNotFoundException) {
-      throw new NotFoundError(`List ${id} not found`);
     }
     throw error;
   }

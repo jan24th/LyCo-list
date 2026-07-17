@@ -6,10 +6,7 @@ vi.mock("./client.js", () => ({
   documentClient: { send: sendMock },
 }));
 
-import {
-  ConditionalCheckFailedException,
-  ResourceNotFoundException,
-} from "@aws-sdk/client-dynamodb";
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import {
   ConflictError,
   NotFoundError,
@@ -197,6 +194,33 @@ describe("queryActiveLists", () => {
     });
   });
 
+  it("clamps limit above 100 to 100", async () => {
+    sendMock.mockResolvedValueOnce({
+      Items: Array.from({ length: 100 }, (_, i) =>
+        makeDdbRecord({ id: idA, name: `Item ${i}` }),
+      ),
+      LastEvaluatedKey: { PK: `LIST#${idA}`, SK: "METADATA" },
+    });
+
+    const result = await queryActiveLists(500);
+
+    expect(result.items).toHaveLength(100);
+    expect(sendMock.mock.calls[0][0].input.Limit).toBe(100);
+    expect(result.nextCursor).toBeDefined();
+  });
+
+  it("clamps limit below 1 to 1", async () => {
+    sendMock.mockResolvedValueOnce({
+      Items: [makeDdbRecord({ id: idA, name: "Only" })],
+      LastEvaluatedKey: { PK: `LIST#${idA}`, SK: "METADATA" },
+    });
+
+    const result = await queryActiveLists(0);
+
+    expect(result.items).toHaveLength(1);
+    expect(sendMock.mock.calls[0][0].input.Limit).toBe(1);
+  });
+
   it("resumes from cursor", async () => {
     sendMock.mockResolvedValueOnce({ Items: [] });
 
@@ -327,12 +351,14 @@ describe("deleteList", () => {
   });
 
   it("sets deletedAt and increments version", async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: makeDdbRecord({
-        deletedAt: "2026-01-02T00:00:00.000Z",
-        version: 2,
-      }),
-    });
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({
+        Attributes: makeDdbRecord({
+          deletedAt: "2026-01-02T00:00:00.000Z",
+          version: 2,
+        }),
+      });
 
     const result = await deleteList(
       "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
@@ -344,31 +370,32 @@ describe("deleteList", () => {
     expect(result.deletedAt).toBe("2026-01-02T00:00:00.000Z");
     expect(result.version).toBe(2);
     expect(sendMock.mock.calls[0][0].input).toMatchObject({
+      TableName: "test-table",
+      Key: { PK: "LIST#a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", SK: "METADATA" },
+    });
+    expect(sendMock.mock.calls[1][0].input).toMatchObject({
       ConditionExpression:
         "version = :expectedVersion AND attribute_not_exists(deletedAt)",
     });
   });
 
   it("throws ConflictError on version mismatch", async () => {
-    sendMock.mockRejectedValueOnce(
-      new ConditionalCheckFailedException({
-        message: "version mismatch",
-        $metadata: {},
-      }),
-    );
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockRejectedValueOnce(
+        new ConditionalCheckFailedException({
+          message: "version mismatch",
+          $metadata: {},
+        }),
+      );
 
     await expect(
       deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
-  it("throws NotFoundError on resource not found", async () => {
-    sendMock.mockRejectedValueOnce(
-      new ResourceNotFoundException({
-        message: "not found",
-        $metadata: {},
-      }),
-    );
+  it("throws NotFoundError when list does not exist", async () => {
+    sendMock.mockResolvedValueOnce({});
 
     await expect(
       deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
@@ -376,7 +403,9 @@ describe("deleteList", () => {
   });
 
   it("rethrows unexpected errors", async () => {
-    sendMock.mockRejectedValueOnce(new Error("dynamodb down"));
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockRejectedValueOnce(new Error("dynamodb down"));
 
     await expect(
       deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
@@ -384,9 +413,11 @@ describe("deleteList", () => {
   });
 
   it("throws NotFoundError when returned attributes are malformed", async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
-    });
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({
+        Attributes: { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
+      });
 
     await expect(
       deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
@@ -394,7 +425,9 @@ describe("deleteList", () => {
   });
 
   it("throws NotFoundError when returned attributes are missing", async () => {
-    sendMock.mockResolvedValueOnce({});
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({});
 
     await expect(
       deleteList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 1, "u", "t"),
@@ -413,9 +446,11 @@ describe("restoreList", () => {
   });
 
   it("removes deletedAt and increments version", async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: makeDdbRecord({ version: 3 }),
-    });
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockResolvedValueOnce({
+        Attributes: makeDdbRecord({ version: 3 }),
+      });
 
     const result = await restoreList(
       "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
@@ -427,31 +462,32 @@ describe("restoreList", () => {
     expect(result.deletedAt).toBeUndefined();
     expect(result.version).toBe(3);
     expect(sendMock.mock.calls[0][0].input).toMatchObject({
+      TableName: "test-table",
+      Key: { PK: "LIST#a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", SK: "METADATA" },
+    });
+    expect(sendMock.mock.calls[1][0].input).toMatchObject({
       ConditionExpression:
         "version = :expectedVersion AND attribute_exists(deletedAt)",
     });
   });
 
   it("throws ConflictError on version mismatch", async () => {
-    sendMock.mockRejectedValueOnce(
-      new ConditionalCheckFailedException({
-        message: "version mismatch",
-        $metadata: {},
-      }),
-    );
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockRejectedValueOnce(
+        new ConditionalCheckFailedException({
+          message: "version mismatch",
+          $metadata: {},
+        }),
+      );
 
     await expect(
       restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
-  it("throws NotFoundError on resource not found", async () => {
-    sendMock.mockRejectedValueOnce(
-      new ResourceNotFoundException({
-        message: "not found",
-        $metadata: {},
-      }),
-    );
+  it("throws NotFoundError when list does not exist", async () => {
+    sendMock.mockResolvedValueOnce({});
 
     await expect(
       restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
@@ -459,7 +495,9 @@ describe("restoreList", () => {
   });
 
   it("rethrows unexpected errors", async () => {
-    sendMock.mockRejectedValueOnce(new Error("dynamodb down"));
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockRejectedValueOnce(new Error("dynamodb down"));
 
     await expect(
       restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
@@ -467,9 +505,11 @@ describe("restoreList", () => {
   });
 
   it("throws NotFoundError when returned attributes are malformed", async () => {
-    sendMock.mockResolvedValueOnce({
-      Attributes: { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
-    });
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockResolvedValueOnce({
+        Attributes: { PK: "LIST#x", SK: "METADATA", name: "missing fields" },
+      });
 
     await expect(
       restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
@@ -477,7 +517,9 @@ describe("restoreList", () => {
   });
 
   it("throws NotFoundError when returned attributes are missing", async () => {
-    sendMock.mockResolvedValueOnce({});
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) })
+      .mockResolvedValueOnce({});
 
     await expect(
       restoreList("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", 2, "u", "t"),
