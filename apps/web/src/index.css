@@ -1,10 +1,32 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @theme {
   --color-lyco-bg: #f8fafc;
   --color-lyco-text: #0f172a;
   --color-lyco-primary: #3b82f6;
   --color-lyco-primary-foreground: #ffffff;
+
+  /* shadcn/ui theme (slate) */
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-muted-foreground: #64748b;
+  --color-destructive: #ef4444;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #3b82f6;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
 }
 
 body {
