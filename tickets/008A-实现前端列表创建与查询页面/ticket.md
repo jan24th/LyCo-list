@@ -1,7 +1,7 @@
 ---
 Title: 实现前端列表创建与查询页面
 ID: 008A
-Status: TODO
+Status: COMPLETED
 Labels: web,frontend,lists
 Estimate: 3
 Depends: 004,005,008
