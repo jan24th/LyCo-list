@@ -68,12 +68,12 @@ export function NewListDialog() {
                 type="button"
                 aria-label="随机颜色"
                 onClick={() => setColor(randomListColor(color))}
-                className="flex h-9 w-16 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-200"
+                className="group flex h-9 w-16 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-200"
                 style={{
                   backgroundColor: isColorValid ? color : undefined,
                 }}
               >
-                <RefreshCw className="h-4 w-4 text-white mix-blend-difference" />
+                <RefreshCw className="h-4 w-4 text-white opacity-0 mix-blend-difference transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
               </button>
               <Input
                 id="list-color"
