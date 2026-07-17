@@ -8,7 +8,6 @@ export const listBaseSchema = z.object({
     .max(7)
     .regex(/^#[0-9a-fA-F]{6}$/)
     .default("#3b82f6"),
-  icon: z.string().max(50).default("list"),
   order: orderNumber.default(0),
 });
 
@@ -30,7 +29,6 @@ export const listSchema = listBaseSchema.extend({
 export const listUpdateBodySchema = z.object({
   name: listBaseSchema.shape.name.optional(),
   color: listBaseSchema.shape.color.removeDefault().optional(),
-  icon: listBaseSchema.shape.icon.removeDefault().optional(),
   order: listBaseSchema.shape.order.removeDefault().optional(),
   expectedVersion: z.number().int().nonnegative(),
 });

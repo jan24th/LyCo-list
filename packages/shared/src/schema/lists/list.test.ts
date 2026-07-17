@@ -19,7 +19,6 @@ describe("list schemas", () => {
   it("applies defaults", () => {
     const result = listInputSchema.parse({ name: "默认" });
     expect(result.color).toBe("#3b82f6");
-    expect(result.icon).toBe("list");
     expect(result.order).toBe(0);
   });
 
@@ -32,7 +31,6 @@ describe("list schemas", () => {
       id: "550e8400-e29b-41d4-a716-446655440000",
       name: "购物清单",
       color: "#3b82f6",
-      icon: "list",
       order: 1,
       version: 1,
       createdAt: "2026-07-14T00:00:00Z",
