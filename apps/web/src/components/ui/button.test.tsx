@@ -21,6 +21,12 @@ describe("Button", () => {
     expect(button).toHaveClass("h-8");
   });
 
+  it("renders outline variant", () => {
+    render(<Button variant="outline">Outline</Button>);
+    const button = screen.getByRole("button", { name: "Outline" });
+    expect(button).toHaveClass("border");
+  });
+
   it("calls onClick when clicked", async () => {
     const handleClick = vi.fn();
     render(<Button onClick={handleClick}>Click</Button>);
