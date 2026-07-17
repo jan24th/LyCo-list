@@ -10,3 +10,10 @@ export const LIST_COLORS = [
 ] as const;
 
 export const DEFAULT_LIST_COLOR = LIST_COLORS[0].value;
+
+export function randomListColor(current: string): string {
+  const pool = LIST_COLORS.filter(
+    (option) => option.value !== current.toLowerCase(),
+  );
+  return pool[Math.floor(Math.random() * pool.length)].value;
+}

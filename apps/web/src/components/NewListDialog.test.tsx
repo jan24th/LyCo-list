@@ -1,7 +1,7 @@
 import { renderWithQuery } from "@/lib/test-utils.js";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { NewListDialog } from "./NewListDialog.js";
 
 const { mockUseCreateListMutation } = vi.hoisted(() => ({
@@ -18,7 +18,11 @@ vi.mock("@/hooks/use-lists.js", () => ({
 }));
 
 describe("NewListDialog", () => {
-  it("creates a list with selected color", async () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("creates a list with custom color from hex input", async () => {
     const user = userEvent.setup();
     const mutate = vi.fn((_input, options) => {
       options?.onSuccess?.();
@@ -35,7 +39,9 @@ describe("NewListDialog", () => {
     fireEvent.change(screen.getByLabelText("名称"), {
       target: { value: "购物" },
     });
-    await user.click(screen.getByRole("button", { name: "红色" }));
+    fireEvent.change(screen.getByLabelText("颜色"), {
+      target: { value: "#ef4444" },
+    });
     await user.click(screen.getByText("创建"));
 
     await waitFor(() => expect(mutate).toHaveBeenCalled());
@@ -43,6 +49,51 @@ describe("NewListDialog", () => {
       { name: "购物", color: "#ef4444", order: 0 },
       expect.any(Object),
     );
+  });
+
+  it("generates a random color when refresh is clicked", async () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const user = userEvent.setup();
+    mockUseCreateListMutation.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      error: null,
+    });
+
+    renderWithQuery(<NewListDialog />);
+
+    await user.click(screen.getByText("新建列表"));
+    await user.click(screen.getByRole("button", { name: "随机颜色" }));
+
+    expect(screen.getByLabelText("颜色")).toHaveValue("#ef4444");
+  });
+
+  it("disables submit when color is not a valid hex", async () => {
+    const user = userEvent.setup();
+    const mutate = vi.fn();
+    mockUseCreateListMutation.mockReturnValue({
+      mutate,
+      isPending: false,
+      error: null,
+    });
+
+    renderWithQuery(<NewListDialog />);
+
+    await user.click(screen.getByText("新建列表"));
+    fireEvent.change(screen.getByLabelText("名称"), {
+      target: { value: "购物" },
+    });
+    fireEvent.change(screen.getByLabelText("颜色"), {
+      target: { value: "red" },
+    });
+
+    expect(screen.getByText("创建")).toBeDisabled();
+
+    const form = screen.getByLabelText("名称").closest("form");
+    expect(form).not.toBeNull();
+    fireEvent.submit(form as HTMLFormElement);
+
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it("uses default color when none is selected", async () => {

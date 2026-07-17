@@ -9,20 +9,23 @@ import {
 import { Input } from "@/components/ui/input.js";
 import { Label } from "@/components/ui/label.js";
 import { useCreateListMutation } from "@/hooks/use-lists.js";
-import { DEFAULT_LIST_COLOR, LIST_COLORS } from "@/lib/list-colors.js";
-import { Plus } from "lucide-react";
+import { DEFAULT_LIST_COLOR, randomListColor } from "@/lib/list-colors.js";
+import { Plus, RefreshCw } from "lucide-react";
 import { useState } from "react";
+
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 export function NewListDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_LIST_COLOR);
   const { mutate, isPending, error } = useCreateListMutation();
+  const isColorValid = HEX_COLOR_PATTERN.test(color);
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!trimmed || !isColorValid) return;
 
     mutate(
       { name: trimmed, color, order: 0 },
@@ -59,28 +62,33 @@ export function NewListDialog() {
             />
           </div>
           <div className="space-y-2">
-            <Label>颜色</Label>
-            <div className="flex gap-2">
-              {LIST_COLORS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-label={option.name}
-                  aria-pressed={color === option.value}
-                  onClick={() => setColor(option.value)}
-                  className={`h-7 w-7 rounded-full transition-shadow ${
-                    color === option.value
-                      ? "ring-2 ring-slate-900 ring-offset-2"
-                      : ""
-                  }`}
-                  style={{ backgroundColor: option.value }}
-                />
-              ))}
+            <Label htmlFor="list-color">颜色</Label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="随机颜色"
+                onClick={() => setColor(randomListColor(color))}
+                className="flex h-9 w-16 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-200"
+                style={{
+                  backgroundColor: isColorValid ? color : undefined,
+                }}
+              >
+                <RefreshCw className="h-4 w-4 text-white mix-blend-difference" />
+              </button>
+              <Input
+                id="list-color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                placeholder="#3b82f6"
+              />
             </div>
           </div>
           {error && <p className="text-sm text-red-600">{error.message}</p>}
           <div className="flex justify-end">
-            <Button type="submit" disabled={isPending || !name.trim()}>
+            <Button
+              type="submit"
+              disabled={isPending || !name.trim() || !isColorValid}
+            >
               创建
             </Button>
           </div>
