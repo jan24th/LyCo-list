@@ -27,6 +27,25 @@ export const listSchema = listBaseSchema.extend({
   updatedBy: cognitoSub,
 });
 
+export const listUpdateBodySchema = z.object({
+  name: listBaseSchema.shape.name.optional(),
+  color: listBaseSchema.shape.color.removeDefault().optional(),
+  icon: listBaseSchema.shape.icon.removeDefault().optional(),
+  order: listBaseSchema.shape.order.removeDefault().optional(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export const listRestoreBodySchema = z.object({
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export const listDeleteQuerySchema = z.object({
+  expectedVersion: z.coerce.number().int().nonnegative(),
+});
+
 export type ListInput = z.infer<typeof listInputSchema>;
 export type ListUpdate = z.infer<typeof listUpdateSchema>;
 export type List = z.infer<typeof listSchema>;
+export type ListUpdateBody = z.infer<typeof listUpdateBodySchema>;
+export type ListRestoreBody = z.infer<typeof listRestoreBodySchema>;
+export type ListDeleteQuery = z.infer<typeof listDeleteQuerySchema>;

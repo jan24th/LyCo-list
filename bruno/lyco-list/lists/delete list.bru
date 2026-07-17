@@ -1,0 +1,15 @@
+meta {
+  name: delete list
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/lists/{{listId}}?expectedVersion=2
+  body: none
+  auth: inherit
+}
+
+params:query {
+  expectedVersion: 2
+}

@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1085.0",
+    "@aws-sdk/client-dynamodb": "^3.1089.0",
+    "@aws-sdk/lib-dynamodb": "^3.1089.0",
     "@lyco/shared": "workspace:*"
   },
   "devDependencies": {

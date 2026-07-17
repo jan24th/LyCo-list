@@ -1,0 +1,17 @@
+meta {
+  name: restore list
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/lists/{{listId}}/restore
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "expectedVersion": 3
+  }
+}
