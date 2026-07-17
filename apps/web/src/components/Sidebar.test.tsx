@@ -1,5 +1,6 @@
 import { renderWithQuery } from "@/lib/test-utils.js";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Sidebar } from "./Sidebar.js";
 
@@ -60,6 +61,44 @@ describe("Sidebar", () => {
 
     expect(screen.getByText("购物")).toBeInTheDocument();
     expect(screen.getByLabelText("列表设置")).toBeInTheDocument();
+  });
+
+  it("opens settings menu and allows clicking menu items", async () => {
+    const user = userEvent.setup();
+    mockUseListsQuery.mockReturnValue({
+      data: {
+        items: [
+          {
+            id: "list-1",
+            name: "购物",
+            color: "#3b82f6",
+            icon: "list",
+            order: 0,
+            version: 1,
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-01T00:00:00.000Z",
+            createdBy: "u1",
+            updatedBy: "u1",
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithQuery(<Sidebar />);
+
+    await user.click(screen.getByLabelText("列表设置"));
+    await user.click(await screen.findByText("编辑"));
+    await waitFor(() =>
+      expect(screen.queryByText("编辑")).not.toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByLabelText("列表设置"));
+    await user.click(await screen.findByText("删除"));
+    await waitFor(() =>
+      expect(screen.queryByText("删除")).not.toBeInTheDocument(),
+    );
   });
 
   it("shows loading state", () => {

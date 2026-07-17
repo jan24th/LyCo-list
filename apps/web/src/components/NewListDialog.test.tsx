@@ -35,11 +35,17 @@ describe("NewListDialog", () => {
     fireEvent.change(screen.getByLabelText("名称"), {
       target: { value: "购物" },
     });
+    fireEvent.change(screen.getByLabelText("颜色"), {
+      target: { value: "#ef4444" },
+    });
+    fireEvent.change(screen.getByLabelText("图标"), {
+      target: { value: "briefcase" },
+    });
     await user.click(screen.getByText("创建"));
 
     await waitFor(() => expect(mutate).toHaveBeenCalled());
     expect(mutate).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "购物" }),
+      { name: "购物", color: "#ef4444", icon: "briefcase", order: 0 },
       expect.any(Object),
     );
   });
