@@ -640,7 +640,7 @@ const apiClient = async (path: string, options?: RequestInit) => {
 - 在仓库根目录 `bruno/` 下以 `.bru` 文件形式存储 API 请求。
 - ticket 001 初始化 Bruno 集合，包含 `acc` 和 `prod` 环境（对应 `acc.bru` 和 `prod.bru`），以及 `GET /api/health` 占位请求。
 - 后续 ticket 逐步补充每个接口的对应请求，包含 create/update/assign 的示例请求体。
-- 由于业务接口需要 Cognito JWT 授权，集合中需先执行登录步骤获取 Access Token。token 通过本地环境变量 `BRUNO_ACCESS_TOKEN` 注入（`.bru` 文件中使用 `{{process.env.BRUNO_ACCESS_TOKEN}}`），避免将敏感凭证提交到版本控制；后续请求自动注入 `Authorization: Bearer <token>`。
+- 由于业务接口需要 Cognito JWT 授权，集合中需先执行登录步骤获取 Access Token。token 在各环境文件（`environments/acc.bru`、`environments/prod.bru`）中声明为 secret 变量 `accessToken`，值仅在 Bruno 客户端本地设置、不提交到版本控制；collection 级认证（`collection.bru`）以 bearer 模式引用 `{{accessToken}}`，各请求通过 `auth: inherit` 继承，自动注入 `Authorization: Bearer <token>`。
 - Bruno 用于开发阶段手动 API 测试，以及团队内共享 API 示例。
 
 ## 前端 UI 结构
