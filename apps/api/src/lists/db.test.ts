@@ -23,7 +23,6 @@ function makeList(overrides: Record<string, unknown> = {}) {
     id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
     name: "购物",
     color: "#3b82f6",
-    icon: "list",
     order: 0,
     version: 1,
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -69,7 +68,7 @@ describe("createList", () => {
     sendMock.mockResolvedValueOnce({});
 
     const result = await createList(
-      { name: "购物", color: "#3b82f6", icon: "list", order: 1 },
+      { name: "购物", color: "#3b82f6", order: 1 },
       {
         id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
         userId: "d92a155c-70a1-70cf-8bd5-0dd5d4772093",
@@ -95,7 +94,7 @@ describe("createList", () => {
     clearTableName();
     await expect(
       createList(
-        { name: "x", color: "#3b82f6", icon: "list", order: 0 },
+        { name: "x", color: "#3b82f6", order: 0 },
         { id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11", userId: "u", now: "t" },
       ),
     ).rejects.toThrow("TABLE_NAME environment variable is not set");
