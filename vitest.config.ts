@@ -25,6 +25,7 @@ export default defineConfig({
         "**/vite.config.ts",
         "**/sst.config.ts",
         "**/main.tsx",
+        "apps/web/src/components/ui/**",
       ],
     },
   },
