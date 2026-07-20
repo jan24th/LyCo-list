@@ -61,6 +61,7 @@ describe("shadcn theme contract", () => {
       "sidebar-ring",
     ]) {
       expect(styles).toContain(`--color-${token}:`);
+      expect(styles.match(new RegExp(`--${token}:`, "g"))).toHaveLength(2);
     }
   });
 });
