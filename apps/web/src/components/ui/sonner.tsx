@@ -13,7 +13,6 @@ type ToasterProps = ComponentProps<typeof Sonner>;
 function Toaster(props: ToasterProps) {
   return (
     <Sonner
-      theme="system"
       className="toaster group"
       icons={{
         success: <CheckCircle2Icon className="size-4" />,
@@ -34,6 +33,7 @@ function Toaster(props: ToasterProps) {
         },
       }}
       {...props}
+      theme="system"
     />
   );
 }
