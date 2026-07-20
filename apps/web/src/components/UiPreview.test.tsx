@@ -1,8 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { UiPreview } from "./UiPreview";
 
 describe("UiPreview", () => {
+  afterEach(() => document.documentElement.classList.remove("dark"));
+
   it("renders and edits a semantic form control", () => {
     render(<UiPreview />);
     const input = screen.getByLabelText("列表名称");
@@ -30,6 +32,5 @@ describe("UiPreview", () => {
       "bg-primary",
     );
     expect(screen.getByText("主题组件基线")).toHaveClass("text-foreground");
-    document.documentElement.classList.remove("dark");
   });
 });
