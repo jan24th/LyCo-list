@@ -1,7 +1,7 @@
 ---
 Title: 完成 shadcn/ui 初始化与基础组件预算
 ID: 004B
-Status: TODO
+Status: ARCHIVED
 Labels: web,frontend,ui
 Estimate: 3
 Depends: 004
@@ -34,7 +34,7 @@ Source: .lychee/artifacts/designs/2026-07-13-lyco-list-design.md
   - 表单：Input、Textarea、Label、Checkbox、Select、Switch
   - 操作与反馈：Dialog、Alert Dialog、Dropdown Menu、Popover、Sonner
   - 数据展示：Badge、Avatar、Skeleton
-- 用代表性页面验证基础组件在 light / dark 系统主题下共享同一套 token
+- 用代表性验收 surface 与 smoke test 验证基础组件在 light / dark 系统主题下共享同一套 token；该 surface 不加入业务路由
 - 在前端 README 记录组件添加命令、主题约束和“优先复用现有 shadcn/ui 组件”的规则
 
 ### 延后但已预算的组件
@@ -90,8 +90,16 @@ Then 生成代码沿用相同 style、base color、CSS variables 和 icon librar
 - 配置、生成组件和纯样式变更无需为每个组件复制单元测试
 - 为 Theme Provider 的系统主题默认值与主题变化行为编写测试
 - 添加代表性 smoke test，覆盖一个表单组件和一个 overlay 组件的正常渲染与交互
-- 运行 `bun test`、类型检查、Biome 检查和生产构建
+- 运行 `bun run test`、类型检查、Biome 检查和生产构建
 - 覆盖率须达到 statements / branches / functions / lines 100%
+
+## 归档记录
+
+- 合并时间：2026-07-22
+- 合并分支：`codex/004b-shadcn-baseline` → `main`
+- 合并提交：`9580df3`
+- 状态：已完成并归档
+- 备注：PR #12 已完成固定 Radix/new-york 工具链、19 个 Phase 1 组件、完整 light/dark 语义主题、首屏系统主题同步、代表性 smoke test 与前端 README 约束。
 
 ## 关联设计
 

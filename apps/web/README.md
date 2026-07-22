@@ -31,7 +31,7 @@ bunx shadcn add <component>
 
 必须使用本地固定 CLI，不得使用 `shadcn@latest`。提交生成文件、`apps/web/package.json` 和 `bun.lock`。优先复用 `src/components/ui` 中已有组件，不手写重复 primitive，也不为没有消费者的场景新增 variant。
 
-检查 `shadcn --diff` 时，只允许 Biome 的 import normalization，以及 PopoverTitle 从生成的 `div` 改为与其 `h2` props 一致的 `h2` 这一有意语义修复；其他 variants、sizes、classes 或 JSX 差异必须先调查。
+检查 `bunx shadcn add <component> --diff` 时，只允许 Biome 的 import normalization，以及 PopoverTitle 从生成的 `div` 改为与其 `h2` props 一致的 `h2` 这一有意语义修复；其他 variants、sizes、classes 或 JSX 差异必须先调查。
 
 Phase 1 已安装：Button、Sheet、Separator、Scroll Area、Tooltip、Input、Textarea、Label、Checkbox、Select、Switch、Dialog、Alert Dialog、Dropdown Menu、Popover、Sonner、Badge、Avatar、Skeleton。
 

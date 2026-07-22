@@ -169,7 +169,7 @@ cleanup Lambda ───────────────► DynamoDB
 - 开发阶段使用 `bunx @biomejs/biome check` 做代码检查；CI 阶段使用 `bunx @biomejs/biome ci`。
 - 类型检查优先使用 `tsgo`；若 `tsgo` 尚未兼容项目则回退到 `tsc --noEmit`。
 - 前后端共享 `packages/shared` 的类型与校验 schema。
-- 前端样式使用 Tailwind CSS v4（CSS-first 配置），组件库使用 shadcn/ui，ticket 001 完成初始化。
+- 前端样式使用 Tailwind CSS v4（CSS-first 配置），组件库使用 shadcn/ui；ticket 001 创建占位配置，ticket 004 建立最小 Button 接入，ticket 004B 完成完整语义主题、固定工具链和 Phase 1 组件预算。
 - **Vitest 配置**：根目录 `vitest.config.ts` 使用 `test.projects` 聚合 `apps/*/vitest.config.ts` 与 `packages/*/vitest.config.ts`，不再使用已弃用的 `vitest.workspace.ts`。子包 `vitest.config.ts` 独立配置，根配置统一设置 `coverage.all: false` 并排除 `.sst/`、`node_modules/`、配置文件等，防止 SST 平台文件污染覆盖率报告。
 - **测试命令**：本地与 CI 统一使用 `bun run test` 执行 Vitest（即 `vitest run --coverage --passWithNoTests`），直接使用 `bun test` 会启动 Bun 原生测试运行器，不加载 `jsdom` 且无法读取 `vitest.config.ts`。
 - **CI 工具链**：`oven-sh/setup-bun` 固定为 `v2.2.0`（Node 24 runtime），避免 GitHub Actions 的 Node 20 弃用警告。
@@ -746,7 +746,7 @@ API Gateway HTTP API 的 CORS 按 `$app.stage` 配置：
 
 ### Phase 1：Serverless MVP
 
-1. 搭建 SST v3 项目结构：根目录 `sst.config.ts` 配置 `sst.aws.ApiGatewayV2`（含 `GET /api/health`）和 `sst.aws.StaticSite`；`apps/web` 初始化为 Vite + React + TypeScript + Tailwind CSS v4 + shadcn/ui；`apps/api` 添加占位 health Lambda；`packages/shared` 初始化 `buildResponse`；`bruno/` 初始化 health 请求；CI 工作流配置 Biome、类型检查、测试与 100% 覆盖率。
+1. 搭建 SST v3 项目结构：根目录 `sst.config.ts` 配置 `sst.aws.ApiGatewayV2`（含 `GET /api/health`）和 `sst.aws.StaticSite`；`apps/web` 初始化为 Vite + React + TypeScript + Tailwind CSS v4，并创建 shadcn/ui 占位配置；`apps/api` 添加占位 health Lambda；`packages/shared` 初始化 `buildResponse`；`bruno/` 初始化 health 请求；CI 工作流配置 Biome、类型检查、测试与 100% 覆盖率。
 2. 配置 Cognito User Pool、User Pool Client、Hosted UI 自定义域名，关闭公开注册。
 3. 定义可按实体 ID 直接读取的 DynamoDB 单表、1 个 GSI、TTL 和乐观版本字段。
 4. 前端脚手架：React + Vite + TypeScript + Tailwind + shadcn/ui + TanStack Router/Query/Store/Form + Vitest。
