@@ -68,6 +68,7 @@ export function AppShell({ title, navigation, children }: AppShellProps) {
                 <SheetHeader>
                   <SheetTitle>导航</SheetTitle>
                 </SheetHeader>
+                {/* biome-ignore lint/a11y/useKeyWithClickEvents: 事件委托捕获导航链接点击；链接本身原生支持键盘 Enter 触发 click */}
                 <div className="px-4" onClick={closeAfterNavigation}>
                   {navigation}
                 </div>
