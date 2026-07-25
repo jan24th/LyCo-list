@@ -137,4 +137,17 @@ describe("Sidebar", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("keeps the list when delete is clicked before 008C is wired", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: { items: [customList] } });
+    render(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "列表设置" }));
+    await user.click(await screen.findByRole("menuitem", { name: "删除" }));
+
+    expect(
+      screen.getByRole("link", { name: /购物/ }),
+    ).toBeInTheDocument();
+  });
 });

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NewListDialog } from "./NewListDialog";
@@ -34,10 +34,13 @@ describe("NewListDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "新建列表" }));
     await user.type(screen.getByLabelText("名称"), "  购物  ");
+    fireEvent.change(screen.getByLabelText("颜色"), {
+      target: { value: "#ef4444" },
+    });
     await user.click(screen.getByRole("button", { name: "创建" }));
 
     expect(mutate).toHaveBeenCalledWith(
-      { name: "购物", color: "#3b82f6", order: 0 },
+      { name: "购物", color: "#ef4444", order: 0 },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
   });
@@ -72,6 +75,18 @@ describe("NewListDialog", () => {
 
     await user.type(screen.getByLabelText("名称"), "   ");
     expect(screen.getByRole("button", { name: "创建" })).toBeDisabled();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it("ignores direct form submission when name is blank", async () => {
+    const user = userEvent.setup();
+    const mutate = mockMutation();
+    render(<NewListDialog />);
+
+    await user.click(screen.getByRole("button", { name: "新建列表" }));
+    await user.type(screen.getByLabelText("名称"), "   ");
+    fireEvent.submit(screen.getByRole("button", { name: "创建" }).closest("form") as HTMLFormElement);
+
     expect(mutate).not.toHaveBeenCalled();
   });
 

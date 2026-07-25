@@ -1,5 +1,5 @@
 import type { List } from "@lyco/shared";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EditListDialog } from "./EditListDialog";
@@ -55,6 +55,9 @@ describe("EditListDialog", () => {
     const nameInput = screen.getByLabelText("名称");
     await user.clear(nameInput);
     await user.type(nameInput, "  新名称  ");
+    fireEvent.change(screen.getByLabelText("颜色"), {
+      target: { value: "#ef4444" },
+    });
     await user.click(screen.getByRole("button", { name: "保存" }));
 
     expect(mutate).toHaveBeenCalledWith(
@@ -62,7 +65,7 @@ describe("EditListDialog", () => {
         id: mockList.id,
         input: {
           name: "新名称",
-          color: "#3b82f6",
+          color: "#ef4444",
           expectedVersion: 1,
         },
       },
