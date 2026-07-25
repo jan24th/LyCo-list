@@ -7,6 +7,7 @@ import { LoginButton } from "../components/LoginButton";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
+  staticData: { title: "今天" },
 });
 
 function HomePage() {

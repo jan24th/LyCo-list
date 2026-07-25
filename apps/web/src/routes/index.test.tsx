@@ -79,4 +79,12 @@ describe("Home route", () => {
 
     expect(await screen.findByText(/验证失败/)).toBeInTheDocument();
   });
+
+  it("shows the current route title in the application header", async () => {
+    mockGetCurrentUser.mockRejectedValue(new Error("not signed in"));
+    await renderRouter("/");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "今天" }),
+    ).toBeInTheDocument();
+  });
 });

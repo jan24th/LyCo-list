@@ -4,7 +4,7 @@ import {
   createMemoryHistory,
   createRouter,
 } from "@tanstack/react-router";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 window.scrollTo = vi.fn();
@@ -25,6 +25,23 @@ describe("About route", () => {
   it("navigates back to home", async () => {
     await renderRouter("/about");
     await screen.getByRole("button", { name: "返回" }).click();
-    expect(await screen.findByText("今天")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 2, name: "今天" }),
+    ).toBeInTheDocument();
+  });
+
+  it("uses route static data as the application header title", async () => {
+    await renderRouter("/about");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "关于" }),
+    ).toBeInTheDocument();
+  });
+
+  it("navigates through the shell while preserving its main element", async () => {
+    await renderRouter("/about");
+    const main = screen.getByRole("main");
+    fireEvent.click(screen.getAllByRole("link", { name: "首页" })[0]);
+    expect(await screen.findByText("智能列表占位页")).toBeInTheDocument();
+    expect(screen.getByRole("main")).toBe(main);
   });
 });

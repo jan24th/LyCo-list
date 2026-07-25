@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/callback")({
   component: CallbackPage,
+  staticData: { title: "登录回调" },
 });
 
 export function CallbackPage() {
