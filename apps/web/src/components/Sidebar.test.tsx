@@ -146,8 +146,6 @@ describe("Sidebar", () => {
     await user.click(screen.getByRole("button", { name: "列表设置" }));
     await user.click(await screen.findByRole("menuitem", { name: "删除" }));
 
-    expect(
-      screen.getByRole("link", { name: /购物/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /购物/ })).toBeInTheDocument();
   });
 });

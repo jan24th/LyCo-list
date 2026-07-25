@@ -85,7 +85,11 @@ describe("NewListDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "新建列表" }));
     await user.type(screen.getByLabelText("名称"), "   ");
-    fireEvent.submit(screen.getByRole("button", { name: "创建" }).closest("form") as HTMLFormElement);
+    fireEvent.submit(
+      screen
+        .getByRole("button", { name: "创建" })
+        .closest("form") as HTMLFormElement,
+    );
 
     expect(mutate).not.toHaveBeenCalled();
   });
