@@ -259,7 +259,7 @@ cleanup Lambda ───────────────► DynamoDB
 | GSI1PK | `LISTS`                          |
 | GSI1SK | `ORDER#<orderKey>#LIST#<listId>` |
 
-属性：`name`, `color`, `icon`, `order`, `version`, `deletedAt`, `undoUntil`, `deletionVersion`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`。
+属性：`name`, `color`, `order`, `version`, `deletedAt`, `undoUntil`, `deletionVersion`, `createdAt`, `updatedAt`, `createdBy`, `updatedBy`。
 
 > **阶段说明**：在 008（列表 CRUD）阶段，列表软删除仅写入 `deletedAt` 并递增 `version`；`undoUntil`、`deletionVersion` 及 `DELETION_JOB` 在 018（cleanup Lambda）阶段统一引入。任务软删除在 010 阶段实现，可采用完整字段。
 
@@ -371,7 +371,6 @@ interface List {
   id: string;
   name: string;
   color: string;
-  icon: string;
   order: number;
   version: number;
   deletedAt?: string;

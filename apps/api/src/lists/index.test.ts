@@ -88,7 +88,6 @@ const mockList = {
   id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
   name: "购物",
   color: "#3b82f6",
-  icon: "list",
   order: 0,
   version: 1,
   createdAt: "2026-01-01T00:00:00.000Z",
@@ -123,7 +122,7 @@ describe("lists handler", () => {
     const body = JSON.parse(result.body ?? "{}");
     expect(body.name).toBe("购物");
     expect(dbMock.createList).toHaveBeenCalledWith(
-      { name: "购物", color: "#3b82f6", icon: "list", order: 0 },
+      { name: "购物", color: "#3b82f6", order: 0 },
       {
         id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
         userId: "d92a155c-70a1-70cf-8bd5-0dd5d4772093",
