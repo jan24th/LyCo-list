@@ -1,6 +1,6 @@
 Title: 实现任务与无级子任务 CRUD
 Old-ID: 009
-Status: ready-for-agent
+Status: resolved
 Labels: api,tasks
 Estimate: 5
 Blocked by: ../../lists/issues/01-实现列表crud软删除和恢复.md
@@ -102,3 +102,10 @@ Triage 裁定了原 ticket 与设计文档的 3 处冲突（均以设计文档�
 - `undoUntil`/`deletionVersion`/`DELETION_JOB` 与级联删除（010/018）
 - 跨列表查询与智能列表（014/015）
 - DynamoDB Local 迁移（沿用 008 的 AWS SDK mock 方案）
+
+### 2026-07-15 完成记录
+
+- 实现提交：`f1f1854`（fast-forward 合并到 main）
+- 46 个 tasks 测试通过，全套 265 个测试通过，四项覆盖率 100%
+- 双轴 code review 通过，无返工项
+- 遗留观察（转 010）：创建子任务时未校验父任务是否已删除；`sst.config.ts` 的 `listAuth` 命名待后续域复用时调整
