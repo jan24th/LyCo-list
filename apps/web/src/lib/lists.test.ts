@@ -5,9 +5,10 @@ import { createList, fetchLists, updateList } from "./lists";
 
 const { mockApiClient } = vi.hoisted(() => ({ mockApiClient: vi.fn() }));
 
-vi.mock("@/lib/api", () => ({
-  apiClient: mockApiClient,
-}));
+vi.mock("@/lib/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/api")>();
+  return { ...actual, apiClient: mockApiClient };
+});
 
 afterEach(() => {
   vi.clearAllMocks();

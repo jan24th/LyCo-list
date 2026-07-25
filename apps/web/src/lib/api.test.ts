@@ -189,6 +189,7 @@ describe("ApiError", () => {
   });
 
   it("apiClient throws ApiError with status on non-ok response", async () => {
+    vi.stubEnv("VITE_API_URL", "https://api.example.com");
     mockFetchAuthSession.mockResolvedValue({});
     mockFetch.mockResolvedValue({
       ok: false,
