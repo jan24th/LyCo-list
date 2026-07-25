@@ -1,5 +1,6 @@
 import type { List } from "@lyco/shared";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Sidebar } from "./Sidebar";
 
@@ -10,6 +11,11 @@ const { mockUseListsQuery } = vi.hoisted(() => ({
 vi.mock("@/hooks/use-lists", () => ({
   useListsQuery: mockUseListsQuery,
   useCreateListMutation: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    error: null,
+  }),
+  useUpdateListMutation: () => ({
     mutate: vi.fn(),
     isPending: false,
     error: null,
@@ -102,5 +108,33 @@ describe("Sidebar", () => {
     expect(
       screen.getByRole("button", { name: "新建列表" }),
     ).toBeInTheDocument();
+  });
+
+  it("opens the edit dialog when edit is clicked", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: { items: [customList] } });
+    render(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "列表设置" }));
+    await user.click(await screen.findByRole("menuitem", { name: "编辑" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("编辑列表")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("名称")).toHaveValue("购物");
+    expect(within(dialog).getByLabelText("颜色")).toHaveValue("#3b82f6");
+  });
+
+  it("closes the edit dialog via onOpenChange", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: { items: [customList] } });
+    render(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "列表设置" }));
+    await user.click(await screen.findByRole("menuitem", { name: "编辑" }));
+    await screen.findByRole("dialog");
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

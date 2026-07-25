@@ -1,5 +1,8 @@
 import { useListsQuery } from "@/hooks/use-lists";
+import type { List } from "@lyco/shared";
 import { Calendar, CheckCircle, Circle, Flag, Inbox, User } from "lucide-react";
+import { useState } from "react";
+import { EditListDialog } from "./EditListDialog";
 import { ListSettingsMenu } from "./ListSettingsMenu";
 import { NewListDialog } from "./NewListDialog";
 
@@ -17,6 +20,7 @@ const linkClasses =
 
 export function Sidebar() {
   const { data, isLoading, error } = useListsQuery();
+  const [editingList, setEditingList] = useState<List | null>(null);
 
   return (
     <div className="space-y-6">
@@ -56,7 +60,7 @@ export function Sidebar() {
               </a>
               <ListSettingsMenu
                 list={list}
-                onEdit={() => {}}
+                onEdit={setEditingList}
                 onDelete={() => {}}
               />
             </li>
@@ -64,6 +68,18 @@ export function Sidebar() {
         </ul>
         <NewListDialog />
       </section>
+      {editingList && (
+        <EditListDialog
+          key={editingList.id}
+          list={editingList}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingList(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

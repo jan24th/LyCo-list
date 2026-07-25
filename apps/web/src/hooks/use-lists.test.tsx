@@ -5,16 +5,19 @@ import {
   LISTS_QUERY_KEY,
   useCreateListMutation,
   useListsQuery,
+  useUpdateListMutation,
 } from "./use-lists";
 
-const { mockFetchLists, mockCreateList } = vi.hoisted(() => ({
+const { mockFetchLists, mockCreateList, mockUpdateList } = vi.hoisted(() => ({
   mockFetchLists: vi.fn(),
   mockCreateList: vi.fn(),
+  mockUpdateList: vi.fn(),
 }));
 
 vi.mock("@/lib/lists", () => ({
   fetchLists: mockFetchLists,
   createList: mockCreateList,
+  updateList: mockUpdateList,
 }));
 
 afterEach(() => {
@@ -61,6 +64,31 @@ describe("useCreateListMutation", () => {
       },
       expect.anything(),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: LISTS_QUERY_KEY });
+  });
+});
+
+describe("useUpdateListMutation", () => {
+  it("calls updateList and invalidates the lists query on success", async () => {
+    mockUpdateList.mockResolvedValueOnce({
+      id: "1",
+      name: "新名称",
+      version: 2,
+    });
+
+    const { result, client } = renderWithQuery(() => useUpdateListMutation());
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    result.current.mutate({
+      id: "1",
+      input: { name: "新名称", expectedVersion: 1 },
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockUpdateList).toHaveBeenCalledWith("1", {
+      name: "新名称",
+      expectedVersion: 1,
+    });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: LISTS_QUERY_KEY });
   });
 });
