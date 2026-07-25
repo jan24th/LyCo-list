@@ -1,5 +1,5 @@
-import { apiClient } from "@/lib/api";
-import type { List, ListInput } from "@lyco/shared";
+import { ApiError, apiClient } from "@/lib/api";
+import type { List, ListInput, ListUpdate } from "@lyco/shared";
 
 export interface ListsResponse {
   items: List[];
@@ -22,4 +22,25 @@ export async function createList(input: ListInput): Promise<List> {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export interface ListUpdateBody extends ListUpdate {
+  expectedVersion: number;
+}
+
+export async function updateList(
+  id: string,
+  input: ListUpdateBody,
+): Promise<List> {
+  try {
+    return await apiClient(`/api/lists/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409) {
+      throw new Error("数据已过期，请刷新后重试");
+    }
+    throw error;
+  }
 }

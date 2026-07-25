@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { apiClient, getAuthToken } from "./api";
+import { ApiError, apiClient, getAuthToken } from "./api";
 
 const { mockFetchAuthSession, mockSignInWithRedirect } = vi.hoisted(() => ({
   mockFetchAuthSession: vi.fn(),
@@ -175,5 +175,32 @@ describe("apiClient", () => {
     await expect(apiClient("/lists")).rejects.toThrow(
       "API request failed: 500 Internal Server Error",
     );
+  });
+});
+
+describe("ApiError", () => {
+  it("exposes status and bodyText", () => {
+    const error = new ApiError(409, '{"code":"CONFLICT"}', "conflict");
+    expect(error.status).toBe(409);
+    expect(error.bodyText).toBe('{"code":"CONFLICT"}');
+    expect(error.message).toBe("conflict");
+    expect(error.name).toBe("ApiError");
+    expect(error).toBeInstanceOf(Error);
+  });
+
+  it("apiClient throws ApiError with status on non-ok response", async () => {
+    mockFetchAuthSession.mockResolvedValue({});
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 409,
+      text: async () => '{"code":"CONFLICT"}',
+    });
+
+    const error = await apiClient("/lists").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      status: 409,
+      bodyText: '{"code":"CONFLICT"}',
+    });
   });
 });

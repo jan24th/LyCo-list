@@ -1,6 +1,7 @@
 import type { List, ListInput } from "@lyco/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createList, fetchLists } from "./lists";
+import { ApiError } from "./api";
+import { createList, fetchLists, updateList } from "./lists";
 
 const { mockApiClient } = vi.hoisted(() => ({ mockApiClient: vi.fn() }));
 
@@ -45,5 +46,45 @@ describe("createList", () => {
       body: JSON.stringify(input),
     });
     expect(result.name).toBe("工作");
+  });
+});
+
+describe("updateList", () => {
+  it("patches list with expectedVersion", async () => {
+    mockApiClient.mockResolvedValueOnce({
+      id: "1",
+      name: "新名称",
+      version: 2,
+    });
+
+    const result = await updateList("1", {
+      name: "新名称",
+      expectedVersion: 1,
+    });
+
+    expect(mockApiClient).toHaveBeenCalledWith("/api/lists/1", {
+      method: "PATCH",
+      body: JSON.stringify({ name: "新名称", expectedVersion: 1 }),
+    });
+    expect(result.version).toBe(2);
+  });
+
+  it("throws refresh-and-retry message on 409", async () => {
+    mockApiClient.mockRejectedValueOnce(
+      new ApiError(409, '{"code":"CONFLICT"}', "conflict"),
+    );
+
+    await expect(
+      updateList("1", { name: "x", expectedVersion: 1 }),
+    ).rejects.toThrow("数据已过期，请刷新后重试");
+  });
+
+  it("rethrows non-409 errors unchanged", async () => {
+    const serverError = new ApiError(500, "boom", "server error");
+    mockApiClient.mockRejectedValueOnce(serverError);
+
+    await expect(
+      updateList("1", { name: "x", expectedVersion: 1 }),
+    ).rejects.toBe(serverError);
   });
 });

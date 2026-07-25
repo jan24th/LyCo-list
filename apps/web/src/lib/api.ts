@@ -1,5 +1,16 @@
 import { fetchAuthSession, signInWithRedirect } from "aws-amplify/auth";
 
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly bodyText: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function getAuthToken(): Promise<string | null> {
   try {
     const session = await fetchAuthSession();
@@ -38,7 +49,11 @@ export async function apiClient<T = unknown>(
 
   if (!response.ok) {
     const bodyText = await response.text();
-    throw new Error(`API request failed: ${response.status} ${bodyText}`);
+    throw new ApiError(
+      response.status,
+      bodyText,
+      `API request failed: ${response.status} ${bodyText}`,
+    );
   }
 
   return response.json() as Promise<T>;
