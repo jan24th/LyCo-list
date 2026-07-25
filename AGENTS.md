@@ -56,10 +56,7 @@ LyCo-list/
 ## 开发流程
 
 ### 任务规划
-- 使用本地 Linear-style ticket 方案管理任务。
-- Ticket 目录格式为 `tickets/<编号>-<描述>/`，每个 ticket 包含 `ticket.md` 和 `plan.md`。
-- `ticket.md` 应包含背景、范围、验收标准、测试要求、关联设计和后续工单等章节。
-- `plan.md` 从 `ticket.md` 生成，包含可逐步执行的实现步骤与验证命令；计划文件与 ticket 文件互相链接。
+- 使用本地 markdown ticket 方案，存放在 `.scratch/<feature-slug>/`（spec.md + issues/NN-<slug>.md），详见 `docs/agents/issue-tracker.md`。
 - 所有业务逻辑和功能实现采用 TDD。
 
 ### 代码规范
@@ -123,3 +120,17 @@ LyCo-list/
 
 - 当本地 ticket 或计划与设计文档冲突时，以 `.lychee/artifacts/designs/` 中的设计文档为准。
 - 设计决策变更时，同步更新相关 ticket、README 和本文件。
+
+## Agent skills
+
+### Issue tracker
+
+Issue 以本地 markdown 形式存放在 `.scratch/`（每个功能一个目录：spec.md + issues/NN-<slug>.md）。见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+使用五个默认 triage 角色标签：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+单上下文布局：根目录 `CONTEXT.md` + `docs/adr/`。见 `docs/agents/domain.md`。
