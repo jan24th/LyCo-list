@@ -73,3 +73,26 @@ export type TaskInput = z.infer<typeof taskInputSchema>;
 export type TaskUpdate = z.infer<typeof taskUpdateSchema>;
 export type Task = z.infer<typeof taskSchema>;
 export type MoveTaskInput = z.infer<typeof moveTaskInputSchema>;
+
+export const taskUpdateBodySchema = z
+  .object({
+    title: taskBaseSchema.shape.title.optional(),
+    notes: taskBaseSchema.shape.notes.removeDefault().optional(),
+    assigneeIds: taskBaseSchema.shape.assigneeIds.removeDefault().optional(),
+    isFlagged: taskBaseSchema.shape.isFlagged.removeDefault().optional(),
+    priority: taskBaseSchema.shape.priority.removeDefault().optional(),
+    dueDate: taskBaseSchema.shape.dueDate,
+    dueTime: taskBaseSchema.shape.dueTime,
+    timeZone: taskBaseSchema.shape.timeZone,
+    recurrence: taskBaseSchema.shape.recurrence.removeDefault().optional(),
+    order: taskBaseSchema.shape.order.removeDefault().optional(),
+    expectedVersion: z.number().int().nonnegative(),
+  })
+  .superRefine(requireDueDate);
+
+export const taskDeleteQuerySchema = z.object({
+  expectedVersion: z.coerce.number().int().nonnegative(),
+});
+
+export type TaskUpdateBody = z.infer<typeof taskUpdateBodySchema>;
+export type TaskDeleteQuery = z.infer<typeof taskDeleteQuerySchema>;

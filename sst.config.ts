@@ -203,6 +203,29 @@ export default $config({
     api.route("POST /api/lists", listHandler, listAuth);
     api.route("ANY /api/lists/{proxy+}", listHandler, listAuth);
 
+    const taskHandler = {
+      handler: "apps/api/src/tasks/index.handler",
+      runtime: "nodejs22.x",
+      environment: {
+        TABLE_NAME: table.name,
+      },
+      permissions: [
+        {
+          actions: [
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:Query",
+          ],
+          resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
+        },
+      ],
+    };
+
+    api.route("GET /api/tasks", taskHandler, listAuth);
+    api.route("POST /api/tasks", taskHandler, listAuth);
+    api.route("ANY /api/tasks/{proxy+}", taskHandler, listAuth);
+
     return {
       api: api.url,
       web: web.url,

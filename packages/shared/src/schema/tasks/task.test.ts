@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { taskInputSchema, taskSchema, taskUpdateSchema } from "./index.js";
+import {
+  taskDeleteQuerySchema,
+  taskInputSchema,
+  taskSchema,
+  taskUpdateBodySchema,
+  taskUpdateSchema,
+} from "./index.js";
 
 const listId = "550e8400-e29b-41d4-a716-446655440000";
 const parentId = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
@@ -85,5 +91,62 @@ describe("task schemas", () => {
       updatedBy: userId,
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("taskUpdateBodySchema", () => {
+  it("requires expectedVersion and allows partial editable fields", () => {
+    const result = taskUpdateBodySchema.parse({
+      title: "新标题",
+      isFlagged: true,
+      expectedVersion: 2,
+    });
+    expect(result).toEqual({
+      title: "新标题",
+      isFlagged: true,
+      expectedVersion: 2,
+    });
+  });
+
+  it("strips listId, parentId and isCompleted", () => {
+    const result = taskUpdateBodySchema.parse({
+      title: "新标题",
+      listId: "550e8400-e29b-41d4-a716-446655440000",
+      parentId: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      isCompleted: true,
+      expectedVersion: 1,
+    });
+    expect(result).toEqual({ title: "新标题", expectedVersion: 1 });
+  });
+
+  it("rejects missing expectedVersion", () => {
+    expect(taskUpdateBodySchema.safeParse({ title: "x" }).success).toBe(false);
+  });
+
+  it("rejects negative expectedVersion", () => {
+    expect(
+      taskUpdateBodySchema.safeParse({ expectedVersion: -1 }).success,
+    ).toBe(false);
+  });
+
+  it("rejects recurrence without dueDate", () => {
+    expect(
+      taskUpdateBodySchema.safeParse({
+        recurrence: "daily",
+        expectedVersion: 1,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("taskDeleteQuerySchema", () => {
+  it("coerces string expectedVersion", () => {
+    expect(taskDeleteQuerySchema.parse({ expectedVersion: "3" })).toEqual({
+      expectedVersion: 3,
+    });
+  });
+
+  it("rejects missing expectedVersion", () => {
+    expect(taskDeleteQuerySchema.safeParse({}).success).toBe(false);
   });
 });

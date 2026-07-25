@@ -1,0 +1,22 @@
+meta {
+  name: create task
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/tasks
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "买牛奶",
+    "listId": "{{listId}}",
+    "parentId": null,
+    "assigneeIds": [],
+    "priority": "none",
+    "order": 0
+  }
+}

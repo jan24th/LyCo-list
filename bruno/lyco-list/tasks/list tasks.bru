@@ -1,0 +1,16 @@
+meta {
+  name: list tasks
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/tasks?listId={{listId}}&limit=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  listId: {{listId}}
+  limit: 50
+}

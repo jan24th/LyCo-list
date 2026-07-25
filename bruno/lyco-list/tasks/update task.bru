@@ -1,0 +1,19 @@
+meta {
+  name: update task
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/tasks/{{taskId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "新标题",
+    "isFlagged": true,
+    "expectedVersion": 1
+  }
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listQuerySchema } from "./pagination.js";
+import { listQuerySchema, taskQuerySchema } from "./pagination.js";
 
 describe("listQuerySchema", () => {
   it("defaults limit to 50 and omits cursor", () => {
@@ -31,5 +31,29 @@ describe("listQuerySchema", () => {
 
   it("rejects an empty cursor string", () => {
     expect(listQuerySchema.safeParse({ cursor: "" }).success).toBe(false);
+  });
+});
+
+describe("taskQuerySchema", () => {
+  const listId = "550e8400-e29b-41d4-a716-446655440000";
+
+  it("requires listId and defaults limit to 50", () => {
+    expect(taskQuerySchema.parse({ listId })).toEqual({ listId, limit: 50 });
+  });
+
+  it("rejects missing listId", () => {
+    expect(taskQuerySchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects non-uuid listId", () => {
+    expect(taskQuerySchema.safeParse({ listId: "not-a-uuid" }).success).toBe(
+      false,
+    );
+  });
+
+  it("accepts limit and cursor", () => {
+    expect(
+      taskQuerySchema.parse({ listId, limit: "10", cursor: "abc" }),
+    ).toEqual({ listId, limit: 10, cursor: "abc" });
   });
 });
