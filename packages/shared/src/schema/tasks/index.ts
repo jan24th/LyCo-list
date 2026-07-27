@@ -94,5 +94,14 @@ export const taskDeleteQuerySchema = z.object({
   expectedVersion: z.coerce.number().int().nonnegative(),
 });
 
+const expectedVersionBody = z.object({
+  expectedVersion: z.number().int().nonnegative(),
+});
+
+export const taskCompleteBodySchema = expectedVersionBody;
+export const taskRestoreBodySchema = expectedVersionBody;
+
 export type TaskUpdateBody = z.infer<typeof taskUpdateBodySchema>;
 export type TaskDeleteQuery = z.infer<typeof taskDeleteQuerySchema>;
+export type TaskCompleteBody = z.infer<typeof taskCompleteBodySchema>;
+export type TaskRestoreBody = z.infer<typeof taskRestoreBodySchema>;

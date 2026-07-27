@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  taskCompleteBodySchema,
   taskDeleteQuerySchema,
   taskInputSchema,
+  taskRestoreBodySchema,
   taskSchema,
   taskUpdateBodySchema,
   taskUpdateSchema,
@@ -148,5 +150,29 @@ describe("taskDeleteQuerySchema", () => {
 
   it("rejects missing expectedVersion", () => {
     expect(taskDeleteQuerySchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("taskCompleteBodySchema", () => {
+  it("accepts expectedVersion", () => {
+    expect(taskCompleteBodySchema.parse({ expectedVersion: 2 })).toEqual({
+      expectedVersion: 2,
+    });
+  });
+
+  it("rejects missing expectedVersion", () => {
+    expect(taskCompleteBodySchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("taskRestoreBodySchema", () => {
+  it("accepts expectedVersion", () => {
+    expect(taskRestoreBodySchema.parse({ expectedVersion: 2 })).toEqual({
+      expectedVersion: 2,
+    });
+  });
+
+  it("rejects missing expectedVersion", () => {
+    expect(taskRestoreBodySchema.safeParse({}).success).toBe(false);
   });
 });
