@@ -7,13 +7,16 @@ vi.mock("./client.js", () => ({
 }));
 
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
+import { ValidationError } from "@lyco/shared";
 import {
   ConflictError,
   NotFoundError,
+  completeTask,
   createTask,
   deleteTask,
   getTaskTree,
   queryTasksByList,
+  restoreTask,
   updateTask,
 } from "./db.js";
 
@@ -522,6 +525,163 @@ describe("deleteTask", () => {
       .mockResolvedValueOnce({});
 
     await expect(deleteTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+  });
+});
+
+describe("completeTask", () => {
+  beforeEach(() => {
+    process.env.TABLE_NAME = "test-table";
+    sendMock.mockReset();
+  });
+
+  afterEach(() => {
+    // biome-ignore lint/performance/noDelete: need to actually remove the env var
+    delete process.env.TABLE_NAME;
+  });
+
+  it("sets completedAt and isCompleted and increments version", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({
+        Attributes: makeDdbRecord({
+          isCompleted: true,
+          completedAt: NOW,
+          version: 2,
+        }),
+      });
+
+    const result = await completeTask(TASK_ID, 1, USER_ID, NOW);
+
+    expect(result.isCompleted).toBe(true);
+    expect(result.completedAt).toBe(NOW);
+    expect(result.version).toBe(2);
+    expect(sendMock.mock.calls[1][0].input).toMatchObject({
+      ConditionExpression:
+        "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+      ExpressionAttributeValues: expect.objectContaining({
+        ":expectedVersion": 1,
+        ":nextVersion": 2,
+        ":now": NOW,
+        ":userId": USER_ID,
+      }),
+    });
+  });
+
+  it("throws NotFoundError when the task does not exist", async () => {
+    sendMock.mockResolvedValueOnce({});
+    await expect(completeTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+  });
+
+  it("rejects completing a recurring task", async () => {
+    sendMock.mockResolvedValueOnce({
+      Item: makeDdbRecord({ recurrence: "daily", dueDate: "2026-01-01" }),
+    });
+
+    await expect(completeTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    expect(sendMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("throws ConflictError on version mismatch", async () => {
+    sendMock.mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) });
+    sendMock.mockRejectedValueOnce(
+      new ConditionalCheckFailedException({
+        message: "mismatch",
+        $metadata: {},
+      }),
+    );
+
+    await expect(completeTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
+      ConflictError,
+    );
+  });
+
+  it("throws NotFoundError when returned attributes are malformed", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({
+        Attributes: { PK: "TASK#x", SK: "METADATA", title: "malformed" },
+      });
+
+    await expect(completeTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+  });
+});
+
+describe("restoreTask", () => {
+  beforeEach(() => {
+    process.env.TABLE_NAME = "test-table";
+    sendMock.mockReset();
+  });
+
+  afterEach(() => {
+    // biome-ignore lint/performance/noDelete: need to actually remove the env var
+    delete process.env.TABLE_NAME;
+  });
+
+  it("clears completedAt and isCompleted and increments version", async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({
+          isCompleted: true,
+          completedAt: NOW,
+          version: 2,
+        }),
+      })
+      .mockResolvedValueOnce({
+        Attributes: makeDdbRecord({ version: 3 }),
+      });
+
+    const result = await restoreTask(TASK_ID, 2, USER_ID, NOW);
+
+    expect(result.isCompleted).toBe(false);
+    expect(result.completedAt).toBeNull();
+    expect(result.version).toBe(3);
+    expect(sendMock.mock.calls[1][0].input).toMatchObject({
+      ConditionExpression:
+        "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+      ExpressionAttributeValues: expect.objectContaining({
+        ":expectedVersion": 2,
+        ":nextVersion": 3,
+      }),
+    });
+  });
+
+  it("throws NotFoundError when the task does not exist", async () => {
+    sendMock.mockResolvedValueOnce({});
+    await expect(restoreTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+  });
+
+  it("throws ConflictError on version mismatch", async () => {
+    sendMock.mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) });
+    sendMock.mockRejectedValueOnce(
+      new ConditionalCheckFailedException({
+        message: "mismatch",
+        $metadata: {},
+      }),
+    );
+
+    await expect(restoreTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
+      ConflictError,
+    );
+  });
+
+  it("throws NotFoundError when returned attributes are malformed", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({
+        Attributes: { PK: "TASK#x", SK: "METADATA", title: "malformed" },
+      });
+
+    await expect(restoreTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
       NotFoundError,
     );
   });

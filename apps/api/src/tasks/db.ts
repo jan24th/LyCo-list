@@ -11,6 +11,7 @@ import {
   type Task,
   type TaskInput,
   type TaskUpdateBody,
+  ValidationError,
   formatOrderKey,
   taskSchema,
 } from "@lyco/shared";
@@ -240,6 +241,76 @@ export async function updateTask(
   }
 
   return next;
+}
+
+async function updateTaskCompletion(
+  id: string,
+  expectedVersion: number,
+  userId: string,
+  now: string,
+  completed: boolean,
+): Promise<Task> {
+  try {
+    const response = await documentClient.send(
+      new UpdateCommand({
+        TableName: getTableName(),
+        Key: buildKeys(id),
+        ConditionExpression:
+          "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+        UpdateExpression:
+          "SET isCompleted = :isCompleted, completedAt = :completedAt, #version = :nextVersion, updatedAt = :now, updatedBy = :userId",
+        ExpressionAttributeNames: { "#version": "version" },
+        ExpressionAttributeValues: {
+          ":expectedVersion": expectedVersion,
+          ":nextVersion": expectedVersion + 1,
+          ":isCompleted": completed,
+          ":completedAt": completed ? now : null,
+          ":now": now,
+          ":userId": userId,
+        },
+        ReturnValues: "ALL_NEW",
+      }),
+    );
+    const parsed = toTask(response.Attributes ?? {});
+    if (!parsed) {
+      throw new NotFoundError(`Task ${id} not found`);
+    }
+    return parsed;
+  } catch (error) {
+    if (error instanceof ConditionalCheckFailedException) {
+      throw new ConflictError(`Task ${id} version mismatch`);
+    }
+    throw error;
+  }
+}
+
+export async function completeTask(
+  id: string,
+  expectedVersion: number,
+  userId: string,
+  now: string,
+): Promise<Task> {
+  const existing = await getTaskById(id);
+  if (!existing) {
+    throw new NotFoundError(`Task ${id} not found`);
+  }
+  if (existing.recurrence !== "none") {
+    throw new ValidationError("重复任务暂不支持完成");
+  }
+  return updateTaskCompletion(id, expectedVersion, userId, now, true);
+}
+
+export async function restoreTask(
+  id: string,
+  expectedVersion: number,
+  userId: string,
+  now: string,
+): Promise<Task> {
+  const existing = await getTaskById(id);
+  if (!existing) {
+    throw new NotFoundError(`Task ${id} not found`);
+  }
+  return updateTaskCompletion(id, expectedVersion, userId, now, false);
 }
 
 export async function deleteTask(
