@@ -14,6 +14,9 @@ const dbMock = vi.hoisted(() => ({
   getTaskTree: vi.fn(),
   updateTask: vi.fn(),
   deleteTask: vi.fn(),
+  completeTask: vi.fn(),
+  restoreTask: vi.fn(),
+  moveTask: vi.fn(),
 }));
 
 vi.mock("./db.js", () => ({
@@ -418,5 +421,152 @@ describe("tasks handler", () => {
   it("is typed as APIGatewayProxyHandlerV2WithJWTAuthorizer", () => {
     const typed: APIGatewayProxyHandlerV2WithJWTAuthorizer = handler;
     expect(typed).toBeDefined();
+  });
+
+  it("completes a task", async () => {
+    dbMock.completeTask.mockResolvedValueOnce({
+      ...mockTask,
+      isCompleted: true,
+      completedAt: NOW,
+      version: 2,
+    });
+
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/complete`, {
+        body: JSON.stringify({ expectedVersion: 1 }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body ?? "{}");
+    expect(body.isCompleted).toBe(true);
+    expect(dbMock.completeTask).toHaveBeenCalledWith(TASK_ID, 1, USER_ID, NOW);
+  });
+
+  it("returns 400 for invalid complete body", async () => {
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/complete`, {
+        body: JSON.stringify({}),
+      }),
+    );
+
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body ?? "{}").code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 404 when completing a missing task", async () => {
+    dbMock.completeTask.mockRejectedValueOnce(
+      new DbNotFoundError("task not found"),
+    );
+
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/complete`, {
+        body: JSON.stringify({ expectedVersion: 1 }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(404);
+  });
+
+  it("returns 409 on complete version conflict", async () => {
+    dbMock.completeTask.mockRejectedValueOnce(
+      new DbConflictError("version mismatch"),
+    );
+
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/complete`, {
+        body: JSON.stringify({ expectedVersion: 1 }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(409);
+    expect(JSON.parse(result.body ?? "{}").code).toBe("CONFLICT");
+  });
+
+  it("restores a completed task", async () => {
+    dbMock.restoreTask.mockResolvedValueOnce({ ...mockTask, version: 3 });
+
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/restore`, {
+        body: JSON.stringify({ expectedVersion: 2 }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(200);
+    expect(dbMock.restoreTask).toHaveBeenCalledWith(TASK_ID, 2, USER_ID, NOW);
+  });
+
+  it("returns 400 for invalid restore body", async () => {
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/restore`, {
+        body: JSON.stringify({}),
+      }),
+    );
+
+    expect(result.statusCode).toBe(400);
+  });
+
+  it("moves a task to another list", async () => {
+    dbMock.moveTask.mockResolvedValueOnce({
+      ...mockTask,
+      listId: "550e8400-e29b-41d4-a716-446655440001",
+      version: 2,
+    });
+
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/move`, {
+        body: JSON.stringify({
+          listId: "550e8400-e29b-41d4-a716-446655440001",
+          parentId: null,
+          order: 5,
+          expectedVersion: 1,
+        }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body ?? "{}");
+    expect(body.listId).toBe("550e8400-e29b-41d4-a716-446655440001");
+    expect(dbMock.moveTask).toHaveBeenCalledWith(
+      TASK_ID,
+      {
+        listId: "550e8400-e29b-41d4-a716-446655440001",
+        parentId: null,
+        order: 5,
+      },
+      1,
+      USER_ID,
+      NOW,
+    );
+  });
+
+  it("returns 400 for invalid move body", async () => {
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/move`, {
+        body: JSON.stringify({ listId: "not-a-uuid", expectedVersion: 1 }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body ?? "{}").code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 409 on move version conflict", async () => {
+    dbMock.moveTask.mockRejectedValueOnce(
+      new DbConflictError("version mismatch"),
+    );
+
+    const result = await invokeHandler(
+      createEvent("POST", `/api/tasks/${TASK_ID}/move`, {
+        body: JSON.stringify({
+          listId: "550e8400-e29b-41d4-a716-446655440001",
+          parentId: null,
+          order: 5,
+          expectedVersion: 1,
+        }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(409);
   });
 });

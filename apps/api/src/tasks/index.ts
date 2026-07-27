@@ -7,10 +7,13 @@ import {
   decodeCursor,
   encodeCursor,
   errorResponse,
+  moveTaskInputSchema,
   parseRequest,
+  taskCompleteBodySchema,
   taskDeleteQuerySchema,
   taskInputSchema,
   taskQuerySchema,
+  taskRestoreBodySchema,
   taskUpdateBodySchema,
 } from "@lyco/shared";
 import type {
@@ -20,10 +23,13 @@ import type {
 import {
   ConflictError,
   NotFoundError,
+  completeTask,
   createTask,
   deleteTask,
   getTaskTree,
+  moveTask,
   queryTasksByList,
+  restoreTask,
   updateTask,
 } from "./db.js";
 
@@ -82,6 +88,29 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
         now,
       });
       return buildResponse(201, task);
+    }
+
+    const actionMatch =
+      /^\/api\/tasks\/([0-9a-f-]+)\/(complete|restore|move)$/.exec(path);
+    if (method === "POST" && actionMatch) {
+      const [, id, action] = actionMatch;
+      if (action === "complete") {
+        const body = parseRequest(
+          taskCompleteBodySchema,
+          parseBody(event.body),
+        );
+        const task = await completeTask(id, body.expectedVersion, userId, now);
+        return buildResponse(200, task);
+      }
+      if (action === "restore") {
+        const body = parseRequest(taskRestoreBodySchema, parseBody(event.body));
+        const task = await restoreTask(id, body.expectedVersion, userId, now);
+        return buildResponse(200, task);
+      }
+      const body = parseRequest(moveTaskInputSchema, parseBody(event.body));
+      const { expectedVersion, ...input } = body;
+      const task = await moveTask(id, input, expectedVersion, userId, now);
+      return buildResponse(200, task);
     }
 
     const singleMatch = /^\/api\/tasks\/([0-9a-f-]+)$/.exec(path);
