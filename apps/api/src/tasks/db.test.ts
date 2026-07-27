@@ -614,6 +614,16 @@ describe("completeTask", () => {
       NotFoundError,
     );
   });
+
+  it("throws NotFoundError when the update returns no attributes", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({});
+
+    await expect(completeTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+  });
 });
 
 describe("restoreTask", () => {
@@ -958,5 +968,21 @@ describe("moveTask", () => {
         NOW,
       ),
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("rethrows unexpected put errors", async () => {
+    const failure = new Error("dynamodb down");
+    sendMock.mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) });
+    sendMock.mockRejectedValueOnce(failure);
+
+    await expect(
+      moveTask(
+        TASK_ID,
+        { listId: OTHER_LIST_ID, parentId: null, order: 0 },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toBe(failure);
   });
 });
