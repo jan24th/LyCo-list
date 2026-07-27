@@ -13,7 +13,10 @@ for (const group of readdirSync(".scratch")) {
   const updated = spec.replace(
     /\[(.+?)\]\(issues\/(.+?\.md)\) — (.+?)（(.+?)）/g,
     (m, name, file, title) => {
-      const content = readFileSync(join(".scratch", group, "issues", file), "utf8");
+      const content = readFileSync(
+        join(".scratch", group, "issues", file),
+        "utf8",
+      );
       const status = (content.match(/^Status: (.+)$/m) || [])[1];
       return `[${name}](issues/${file}) — ${title}（${status}）`;
     },
