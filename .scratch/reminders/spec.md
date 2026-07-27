@@ -6,5 +6,5 @@
 
 ## Issues
 
-- [01-实现提醒crud与process-due](issues/01-实现提醒crud与process-due.md) — 实现提醒 CRUD 与 process-due（needs-triage）
+- [01-实现提醒crud与process-due](issues/01-实现提醒crud与process-due.md) — 实现提醒 CRUD 与 process-due（ready-for-agent）
 - [02-实现前台提醒与通知轮询](issues/02-实现前台提醒与通知轮询.md) — 实现前台提醒与通知轮询（needs-triage）
