@@ -1,6 +1,6 @@
 Title: 实现 Assign 事务与幂等分配通知
 Old-ID: 011
-Status: ready-for-agent
+Status: resolved
 Labels: api,tasks,notifications
 Estimate: 5
 Blocked by: 01, 02
@@ -85,3 +85,11 @@ Then 不会创建通知
 - 每位新增 assignee 恰有一个有效 UUID notification；相同输入重试生成相同 ID。
 - 冲突返回 409，事务失败不会产生后续独立写入。
 - `bun run test`、类型检查和 Biome 检查通过，覆盖率阈值保持 100%。
+
+### 2026-07-27 完成记录
+
+- 实现提交：`4c4534b feat(tasks): add assignment transactions`
+- `POST /api/tasks` 的初始 assignee 与 PATCH 新增 assignee 都通过同一 DynamoDB transaction 原子写入任务和 assignment notifications；仅新增接收人会收到通知。
+- 通知 ID 使用固定命名空间 UUID v5，从任务 ID、接收人 ID 和新任务版本派生；通知记录带 `version: 1`，输入 assignee ID 去重。
+- task handler 获得 `dynamodb:TransactWriteItems` 最小权限；既有 Bruno 创建任务请求已包含 `assigneeIds` 字段，无需另增不具备真实 assignee ID 的示例请求。
+- `bun run test`：378 tests、四项覆盖率 100%；`bun run typecheck` 与 Biome 通过。`tsgo` 未安装，已按约定回退至 `tsc --build --noEmit`。
