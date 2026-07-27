@@ -39,6 +39,7 @@ import { handler } from "./index.js";
 const LIST_ID = "550e8400-e29b-41d4-a716-446655440000";
 const TASK_ID = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
 const USER_ID = "d92a155c-70a1-70cf-8bd5-0dd5d4772093";
+const ASSIGNEE_ID = "11111111-2222-4333-8444-555555555555";
 const NOW = "2026-01-01T00:00:00.000Z";
 
 function createEvent(
@@ -143,6 +144,29 @@ describe("tasks handler", () => {
     expect(body.title).toBe("买牛奶");
     expect(dbMock.createTask).toHaveBeenCalledWith(
       expect.objectContaining({ title: "买牛奶", listId: LIST_ID }),
+      { id: TASK_ID, userId: USER_ID, now: NOW },
+    );
+  });
+
+  it("creates a task with initial assignees", async () => {
+    dbMock.createTask.mockResolvedValueOnce({
+      ...mockTask,
+      assigneeIds: [ASSIGNEE_ID],
+    });
+
+    const result = await invokeHandler(
+      createEvent("POST", "/api/tasks", {
+        body: JSON.stringify({
+          title: "买牛奶",
+          listId: LIST_ID,
+          assigneeIds: [ASSIGNEE_ID],
+        }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(201);
+    expect(dbMock.createTask).toHaveBeenCalledWith(
+      expect.objectContaining({ assigneeIds: [ASSIGNEE_ID] }),
       { id: TASK_ID, userId: USER_ID, now: NOW },
     );
   });
@@ -283,6 +307,32 @@ describe("tasks handler", () => {
     );
   });
 
+  it("updates assignees through the existing PATCH endpoint", async () => {
+    dbMock.updateTask.mockResolvedValueOnce({
+      ...mockTask,
+      assigneeIds: [ASSIGNEE_ID],
+      version: 2,
+    });
+
+    const result = await invokeHandler(
+      createEvent("PATCH", `/api/tasks/${TASK_ID}`, {
+        body: JSON.stringify({
+          assigneeIds: [ASSIGNEE_ID],
+          expectedVersion: 1,
+        }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(200);
+    expect(dbMock.updateTask).toHaveBeenCalledWith(
+      TASK_ID,
+      { assigneeIds: [ASSIGNEE_ID] },
+      1,
+      USER_ID,
+      NOW,
+    );
+  });
+
   it("strips listId, parentId and isCompleted from updates", async () => {
     dbMock.updateTask.mockResolvedValueOnce({ ...mockTask, version: 2 });
 
@@ -305,6 +355,20 @@ describe("tasks handler", () => {
       USER_ID,
       NOW,
     );
+  });
+
+  it("rejects duplicate assignees in PATCH", async () => {
+    const result = await invokeHandler(
+      createEvent("PATCH", `/api/tasks/${TASK_ID}`, {
+        body: JSON.stringify({
+          assigneeIds: [ASSIGNEE_ID, ASSIGNEE_ID],
+          expectedVersion: 1,
+        }),
+      }),
+    );
+
+    expect(result.statusCode).toBe(400);
+    expect(dbMock.updateTask).not.toHaveBeenCalled();
   });
 
   it("returns 400 for missing expectedVersion in update", async () => {

@@ -15,7 +15,13 @@ export const taskBaseSchema = z.object({
   notes: z.string().max(5000).default(""),
   listId: z.string().uuid(),
   parentId: z.string().uuid().nullable().default(null),
-  assigneeIds: z.array(cognitoSub).max(20).default([]),
+  assigneeIds: z
+    .array(cognitoSub)
+    .max(20)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: "assigneeIds must not contain duplicates",
+    })
+    .default([]),
   isCompleted: z.boolean().default(false),
   isFlagged: z.boolean().default(false),
   priority: priority.default("none"),

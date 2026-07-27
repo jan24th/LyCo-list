@@ -12,6 +12,7 @@ export const notificationSchema = z.object({
   taskTitle: z.string().min(1).max(500),
   message: z.string().min(1).max(1000),
   isRead: z.boolean().default(false),
+  version: z.number().int().nonnegative(),
   readAt: isoTimestamp.optional(),
   createdAt: isoTimestamp,
   expiresAtEpoch: z.number().int().nonnegative().optional(),

@@ -6,8 +6,11 @@ vi.mock("./client.js", () => ({
   documentClient: { send: sendMock },
 }));
 
-import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
-import { ValidationError } from "@lyco/shared";
+import {
+  ConditionalCheckFailedException,
+  TransactionCanceledException,
+} from "@aws-sdk/client-dynamodb";
+import { ValidationError, notificationSchema } from "@lyco/shared";
 import {
   ConflictError,
   NotFoundError,
@@ -28,6 +31,8 @@ const PARENT_ID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 const CHILD_ID = "6ba7b812-9dad-11d1-80b4-00c04fd430c8";
 const GRANDCHILD_ID = "6ba7b813-9dad-11d1-80b4-00c04fd430c8";
 const USER_ID = "d92a155c-70a1-70cf-8bd5-0dd5d4772093";
+const FIRST_ASSIGNEE_ID = "11111111-2222-4333-8444-555555555555";
+const SECOND_ASSIGNEE_ID = "22222222-3333-4444-8555-666666666666";
 const NOW = "2026-01-01T00:00:00.000Z";
 
 function makeInput(overrides: Record<string, unknown> = {}) {
@@ -124,6 +129,59 @@ describe("createTask", () => {
     expect(sendMock.mock.calls[0][0].input.Item.GSI1SK).toContain(
       `LIST#${LIST_ID}#PARENT#ROOT#`,
     );
+  });
+
+  it("atomically creates assignment notifications with an assigned task", async () => {
+    const assigneeIds = [FIRST_ASSIGNEE_ID, SECOND_ASSIGNEE_ID];
+    sendMock.mockResolvedValueOnce({});
+
+    const result = await createTask(makeInput({ assigneeIds }), {
+      id: TASK_ID,
+      userId: USER_ID,
+      now: NOW,
+    });
+
+    expect(result.assigneeIds).toEqual(assigneeIds);
+    const transactItems = sendMock.mock.calls[0][0].input.TransactItems;
+    expect(transactItems).toHaveLength(3);
+    expect(transactItems[0]).toMatchObject({
+      Put: {
+        TableName: "test-table",
+        Item: expect.objectContaining({
+          PK: `TASK#${TASK_ID}`,
+          assigneeIds,
+        }),
+        ConditionExpression: "attribute_not_exists(PK)",
+      },
+    });
+
+    const notificationWrites = transactItems
+      .slice(1)
+      .map((item: any) => item.Put);
+    expect(
+      notificationWrites.map((item: any) => item.Item.recipientId),
+    ).toEqual(assigneeIds);
+    for (const notificationWrite of notificationWrites) {
+      const notification = notificationWrite.Item;
+      expect(notification).toMatchObject({
+        PK: `NOTIFICATION#${notification.id}`,
+        SK: "METADATA",
+        GSI1PK: `USER#${notification.recipientId}#NOTIFICATIONS`,
+        GSI1SK: `NOTIFICATION#${NOW}`,
+        entityType: "NOTIFICATION",
+        type: "assignment",
+        taskId: TASK_ID,
+        taskTitle: "买牛奶",
+        message: "你被分配了一个新任务",
+        isRead: false,
+        version: 1,
+        createdAt: NOW,
+      });
+      expect(notificationWrite.ConditionExpression).toBe(
+        "attribute_not_exists(PK)",
+      );
+      expect(notificationSchema.safeParse(notification).success).toBe(true);
+    }
   });
 
   it("derives listId from the parent when parentId is given", async () => {
@@ -417,6 +475,129 @@ describe("updateTask", () => {
     });
   });
 
+  it("atomically notifies only newly assigned users", async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({ assigneeIds: [FIRST_ASSIGNEE_ID] }),
+      })
+      .mockResolvedValueOnce({});
+
+    const result = await updateTask(
+      TASK_ID,
+      {
+        title: "新标题",
+        assigneeIds: [FIRST_ASSIGNEE_ID, SECOND_ASSIGNEE_ID],
+      },
+      1,
+      USER_ID,
+      NOW,
+    );
+
+    expect(result).toMatchObject({
+      title: "新标题",
+      assigneeIds: [FIRST_ASSIGNEE_ID, SECOND_ASSIGNEE_ID],
+      version: 2,
+    });
+    const transactItems = sendMock.mock.calls[1][0].input.TransactItems;
+    expect(transactItems).toHaveLength(2);
+    expect(transactItems[0]).toMatchObject({
+      Put: {
+        Item: expect.objectContaining({
+          version: 2,
+          assigneeIds: [FIRST_ASSIGNEE_ID, SECOND_ASSIGNEE_ID],
+        }),
+        ConditionExpression:
+          "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+        ExpressionAttributeValues: { ":expectedVersion": 1 },
+      },
+    });
+    const notification = transactItems[1].Put.Item;
+    expect(notification).toMatchObject({
+      recipientId: SECOND_ASSIGNEE_ID,
+      taskTitle: "新标题",
+      taskId: TASK_ID,
+      version: 1,
+    });
+    expect(notificationSchema.safeParse(notification).success).toBe(true);
+  });
+
+  it("does not create notifications when assignees are only removed", async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({
+          assigneeIds: [FIRST_ASSIGNEE_ID, SECOND_ASSIGNEE_ID],
+        }),
+      })
+      .mockResolvedValueOnce({});
+
+    const result = await updateTask(
+      TASK_ID,
+      { assigneeIds: [FIRST_ASSIGNEE_ID] },
+      1,
+      USER_ID,
+      NOW,
+    );
+
+    expect(result.assigneeIds).toEqual([FIRST_ASSIGNEE_ID]);
+    expect(sendMock.mock.calls[1][0].input).toMatchObject({
+      Item: expect.objectContaining({
+        assigneeIds: [FIRST_ASSIGNEE_ID],
+      }),
+      ConditionExpression:
+        "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+    });
+    expect(sendMock.mock.calls[1][0].input.TransactItems).toBeUndefined();
+  });
+
+  it("derives a stable notification ID for each task version", async () => {
+    sendMock
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({ assigneeIds: [], version: 1 }),
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({ assigneeIds: [], version: 1 }),
+      })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({ assigneeIds: [], version: 2 }),
+      })
+      .mockResolvedValueOnce({});
+
+    await updateTask(
+      TASK_ID,
+      { assigneeIds: [FIRST_ASSIGNEE_ID] },
+      1,
+      USER_ID,
+      NOW,
+    );
+    const firstId =
+      sendMock.mock.calls[1][0].input.TransactItems[1].Put.Item.id;
+
+    await updateTask(
+      TASK_ID,
+      { assigneeIds: [FIRST_ASSIGNEE_ID] },
+      1,
+      USER_ID,
+      NOW,
+    );
+    const retriedId =
+      sendMock.mock.calls[3][0].input.TransactItems[1].Put.Item.id;
+
+    await updateTask(
+      TASK_ID,
+      { assigneeIds: [FIRST_ASSIGNEE_ID] },
+      2,
+      USER_ID,
+      NOW,
+    );
+    const laterVersionId =
+      sendMock.mock.calls[5][0].input.TransactItems[1].Put.Item.id;
+
+    expect(retriedId).toBe(firstId);
+    expect(laterVersionId).not.toBe(firstId);
+  });
+
   it("throws NotFoundError when the task does not exist", async () => {
     sendMock.mockResolvedValueOnce({});
     await expect(
@@ -436,6 +617,44 @@ describe("updateTask", () => {
     await expect(
       updateTask(TASK_ID, { title: "x" }, 1, USER_ID, NOW),
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it("returns a conflict when the assignment transaction is cancelled", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ assigneeIds: [] }) })
+      .mockRejectedValueOnce(
+        new TransactionCanceledException({
+          message: "conditional write failed",
+          $metadata: {},
+        }),
+      );
+
+    await expect(
+      updateTask(
+        TASK_ID,
+        { assigneeIds: [FIRST_ASSIGNEE_ID] },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect(sendMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("rethrows an unexpected assignment transaction error", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ assigneeIds: [] }) })
+      .mockRejectedValueOnce(new Error("network boom"));
+
+    await expect(
+      updateTask(
+        TASK_ID,
+        { assigneeIds: [FIRST_ASSIGNEE_ID] },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toThrow("network boom");
   });
 
   it("rethrows unexpected errors", async () => {

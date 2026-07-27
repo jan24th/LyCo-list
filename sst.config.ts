@@ -215,6 +215,7 @@ export default $config({
             "dynamodb:GetItem",
             "dynamodb:PutItem",
             "dynamodb:UpdateItem",
+            "dynamodb:TransactWriteItems",
             "dynamodb:Query",
           ],
           resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],

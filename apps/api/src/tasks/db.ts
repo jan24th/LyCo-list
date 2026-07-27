@@ -1,14 +1,20 @@
-import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
+import { createHash } from "node:crypto";
+import {
+  ConditionalCheckFailedException,
+  TransactionCanceledException,
+} from "@aws-sdk/client-dynamodb";
 import {
   GetCommand,
   PutCommand,
   QueryCommand,
   type QueryCommandOutput,
+  TransactWriteCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
   type CursorKey,
   type MoveTaskInput,
+  type Notification,
   type Task,
   type TaskInput,
   type TaskUpdateBody,
@@ -63,6 +69,102 @@ function toRecord(task: Task): Record<string, unknown> {
 function toTask(item: Record<string, unknown>): Task | null {
   const parsed = taskSchema.safeParse(item);
   return parsed.success ? parsed.data : null;
+}
+
+const assignmentNotificationNamespace = "f4e9e3e5-9f21-4bf1-8a97-3c1d3f5e5b42";
+
+function createAssignmentNotificationId(
+  taskId: string,
+  recipientId: string,
+  taskVersion: number,
+): string {
+  const namespace = Buffer.from(
+    assignmentNotificationNamespace.replaceAll("-", ""),
+    "hex",
+  );
+  const hash = createHash("sha1")
+    .update(namespace)
+    .update(`assignment:${taskId}:${recipientId}:${taskVersion}`)
+    .digest();
+  hash[6] = (hash[6] & 0x0f) | 0x50;
+  hash[8] = (hash[8] & 0x3f) | 0x80;
+  const value = hash.subarray(0, 16).toString("hex");
+  return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(
+    12,
+    16,
+  )}-${value.slice(16, 20)}-${value.slice(20, 32)}`;
+}
+
+function toAssignmentNotificationRecord(
+  task: Task,
+  recipientId: string,
+  now: string,
+): Record<string, unknown> {
+  const notification: Notification = {
+    id: createAssignmentNotificationId(task.id, recipientId, task.version),
+    type: "assignment",
+    recipientId,
+    taskId: task.id,
+    taskTitle: task.title,
+    message: "你被分配了一个新任务",
+    isRead: false,
+    version: 1,
+    createdAt: now,
+  };
+  return {
+    PK: `NOTIFICATION#${notification.id}`,
+    SK: "METADATA",
+    GSI1PK: `USER#${recipientId}#NOTIFICATIONS`,
+    GSI1SK: `NOTIFICATION#${now}`,
+    entityType: "NOTIFICATION",
+    ...notification,
+  };
+}
+
+async function transactTaskWithAssignmentNotifications(
+  task: Task,
+  recipientIds: string[],
+  now: string,
+  expectedVersion?: number,
+): Promise<void> {
+  const tableName = getTableName();
+  try {
+    await documentClient.send(
+      new TransactWriteCommand({
+        TransactItems: [
+          {
+            Put: {
+              TableName: tableName,
+              Item: toRecord(task),
+              ConditionExpression:
+                expectedVersion === undefined
+                  ? "attribute_not_exists(PK)"
+                  : "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+              ...(expectedVersion === undefined
+                ? {}
+                : {
+                    ExpressionAttributeValues: {
+                      ":expectedVersion": expectedVersion,
+                    },
+                  }),
+            },
+          },
+          ...recipientIds.map((recipientId) => ({
+            Put: {
+              TableName: tableName,
+              Item: toAssignmentNotificationRecord(task, recipientId, now),
+              ConditionExpression: "attribute_not_exists(PK)",
+            },
+          })),
+        ],
+      }),
+    );
+  } catch (error) {
+    if (error instanceof TransactionCanceledException) {
+      throw new ConflictError(`Task ${task.id} write conflict`);
+    }
+    throw error;
+  }
 }
 
 export async function getTaskById(id: string): Promise<Task | null> {
@@ -200,13 +302,21 @@ export async function createTask(
     updatedBy: metadata.userId,
   };
 
-  await documentClient.send(
-    new PutCommand({
-      TableName: getTableName(),
-      Item: toRecord(task),
-      ConditionExpression: "attribute_not_exists(PK)",
-    }),
-  );
+  if (task.assigneeIds.length > 0) {
+    await transactTaskWithAssignmentNotifications(
+      task,
+      task.assigneeIds,
+      metadata.now,
+    );
+  } else {
+    await documentClient.send(
+      new PutCommand({
+        TableName: getTableName(),
+        Item: toRecord(task),
+        ConditionExpression: "attribute_not_exists(PK)",
+      }),
+    );
+  }
 
   return task;
 }
@@ -231,21 +341,35 @@ export async function updateTask(
     updatedBy: userId,
   };
 
-  try {
-    await documentClient.send(
-      new PutCommand({
-        TableName: getTableName(),
-        Item: toRecord(next),
-        ConditionExpression:
-          "version = :expectedVersion AND attribute_not_exists(deletedAt)",
-        ExpressionAttributeValues: { ":expectedVersion": expectedVersion },
-      }),
+  const addedAssigneeIds =
+    input.assigneeIds?.filter(
+      (assigneeId) => !existing.assigneeIds.includes(assigneeId),
+    ) ?? [];
+
+  if (addedAssigneeIds.length > 0) {
+    await transactTaskWithAssignmentNotifications(
+      next,
+      addedAssigneeIds,
+      now,
+      expectedVersion,
     );
-  } catch (error) {
-    if (error instanceof ConditionalCheckFailedException) {
-      throw new ConflictError(`Task ${id} version mismatch`);
+  } else {
+    try {
+      await documentClient.send(
+        new PutCommand({
+          TableName: getTableName(),
+          Item: toRecord(next),
+          ConditionExpression:
+            "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+          ExpressionAttributeValues: { ":expectedVersion": expectedVersion },
+        }),
+      );
+    } catch (error) {
+      if (error instanceof ConditionalCheckFailedException) {
+        throw new ConflictError(`Task ${id} version mismatch`);
+      }
+      throw error;
     }
-    throw error;
   }
 
   return next;

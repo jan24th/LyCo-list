@@ -35,7 +35,20 @@ describe("task schemas", () => {
     const result = taskInputSchema.safeParse({
       title: "A",
       listId,
-      assigneeIds: Array.from({ length: 21 }, () => userId),
+      assigneeIds: Array.from(
+        { length: 21 },
+        (_, index) =>
+          `00000000-0000-4000-8000-${index.toString().padStart(12, "0")}`,
+      ),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects duplicate assignees", () => {
+    const result = taskInputSchema.safeParse({
+      title: "A",
+      listId,
+      assigneeIds: [userId, userId],
     });
     expect(result.success).toBe(false);
   });
@@ -128,6 +141,15 @@ describe("taskUpdateBodySchema", () => {
   it("rejects negative expectedVersion", () => {
     expect(
       taskUpdateBodySchema.safeParse({ expectedVersion: -1 }).success,
+    ).toBe(false);
+  });
+
+  it("rejects duplicate assignees", () => {
+    expect(
+      taskUpdateBodySchema.safeParse({
+        assigneeIds: [userId, userId],
+        expectedVersion: 1,
+      }).success,
     ).toBe(false);
   });
 
