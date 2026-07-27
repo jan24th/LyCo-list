@@ -28,6 +28,40 @@ export interface ListUpdateBody extends ListUpdate {
   expectedVersion: number;
 }
 
+export async function deleteList(
+  id: string,
+  expectedVersion: number,
+): Promise<List> {
+  try {
+    return await apiClient(
+      `/api/lists/${id}?expectedVersion=${expectedVersion}`,
+      { method: "DELETE" },
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409) {
+      throw new Error("数据已过期，请刷新后重试");
+    }
+    throw error;
+  }
+}
+
+export async function restoreList(
+  id: string,
+  expectedVersion: number,
+): Promise<List> {
+  try {
+    return await apiClient(`/api/lists/${id}/restore`, {
+      method: "POST",
+      body: JSON.stringify({ expectedVersion }),
+    });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 409) {
+      throw new Error("数据已过期，请刷新后重试");
+    }
+    throw error;
+  }
+}
+
 export async function updateList(
   id: string,
   input: ListUpdateBody,

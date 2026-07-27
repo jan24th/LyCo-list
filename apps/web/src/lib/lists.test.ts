@@ -1,7 +1,13 @@
 import type { List, ListInput } from "@lyco/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "./api";
-import { createList, fetchLists, updateList } from "./lists";
+import {
+  createList,
+  deleteList,
+  fetchLists,
+  restoreList,
+  updateList,
+} from "./lists";
 
 const { mockApiClient } = vi.hoisted(() => ({ mockApiClient: vi.fn() }));
 
@@ -47,6 +53,68 @@ describe("createList", () => {
       body: JSON.stringify(input),
     });
     expect(result.name).toBe("工作");
+  });
+});
+
+describe("deleteList", () => {
+  it("sends DELETE with expectedVersion as query param", async () => {
+    mockApiClient.mockResolvedValueOnce({ id: "1", version: 2 });
+
+    const result = await deleteList("1", 1);
+
+    expect(mockApiClient).toHaveBeenCalledWith(
+      "/api/lists/1?expectedVersion=1",
+      { method: "DELETE" },
+    );
+    expect(result.version).toBe(2);
+  });
+
+  it("converts 409 ApiError to refresh-and-retry message", async () => {
+    mockApiClient.mockRejectedValueOnce(
+      new ApiError(409, "conflict", "请求失败：409"),
+    );
+
+    await expect(deleteList("1", 1)).rejects.toThrow(
+      "数据已过期，请刷新后重试",
+    );
+  });
+
+  it("rethrows non-409 errors unchanged", async () => {
+    const failure = new ApiError(500, "boom", "请求失败：500");
+    mockApiClient.mockRejectedValueOnce(failure);
+
+    await expect(deleteList("1", 1)).rejects.toBe(failure);
+  });
+});
+
+describe("restoreList", () => {
+  it("sends POST restore with expectedVersion in body", async () => {
+    mockApiClient.mockResolvedValueOnce({ id: "1", version: 3 });
+
+    const result = await restoreList("1", 2);
+
+    expect(mockApiClient).toHaveBeenCalledWith("/api/lists/1/restore", {
+      method: "POST",
+      body: JSON.stringify({ expectedVersion: 2 }),
+    });
+    expect(result.version).toBe(3);
+  });
+
+  it("converts 409 ApiError to refresh-and-retry message", async () => {
+    mockApiClient.mockRejectedValueOnce(
+      new ApiError(409, "conflict", "请求失败：409"),
+    );
+
+    await expect(restoreList("1", 2)).rejects.toThrow(
+      "数据已过期，请刷新后重试",
+    );
+  });
+
+  it("rethrows non-409 errors unchanged", async () => {
+    const failure = new ApiError(500, "boom", "请求失败：500");
+    mockApiClient.mockRejectedValueOnce(failure);
+
+    await expect(restoreList("1", 2)).rejects.toBe(failure);
   });
 });
 
