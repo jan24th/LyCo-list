@@ -8,6 +8,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import {
   type CursorKey,
+  type MoveTaskInput,
   type Task,
   type TaskInput,
   type TaskUpdateBody,
@@ -78,7 +79,10 @@ export type TaskNode = Task & {
   children: TaskNode[];
 };
 
-async function queryDirectChildren(task: Task): Promise<Task[]> {
+async function queryChildrenByList(
+  listId: string,
+  parentId: string,
+): Promise<Task[]> {
   const children: Task[] = [];
   let lastEvaluatedKey: CursorKey | undefined;
 
@@ -90,7 +94,7 @@ async function queryDirectChildren(task: Task): Promise<Task[]> {
         KeyConditionExpression: "GSI1PK = :pk AND begins_with(GSI1SK, :prefix)",
         ExpressionAttributeValues: {
           ":pk": "TASKS",
-          ":prefix": `LIST#${task.listId}#PARENT#${task.id}#`,
+          ":prefix": `LIST#${listId}#PARENT#${parentId}#`,
         },
         ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
       }),
@@ -105,6 +109,10 @@ async function queryDirectChildren(task: Task): Promise<Task[]> {
   } while (lastEvaluatedKey);
 
   return children;
+}
+
+async function queryDirectChildren(task: Task): Promise<Task[]> {
+  return queryChildrenByList(task.listId, task.id);
 }
 
 async function buildNode(task: Task): Promise<TaskNode> {
@@ -311,6 +319,99 @@ export async function restoreTask(
     throw new NotFoundError(`Task ${id} not found`);
   }
   return updateTaskCompletion(id, expectedVersion, userId, now, false);
+}
+
+async function cascadeListId(
+  parentId: string,
+  oldListId: string,
+  newListId: string,
+  userId: string,
+  now: string,
+): Promise<void> {
+  const children = await queryChildrenByList(oldListId, parentId);
+  for (const child of children) {
+    const movedChild: Task = {
+      ...child,
+      listId: newListId,
+      version: child.version + 1,
+      updatedAt: now,
+      updatedBy: userId,
+    };
+    await documentClient.send(
+      new PutCommand({
+        TableName: getTableName(),
+        Item: toRecord(movedChild),
+      }),
+    );
+    await cascadeListId(child.id, oldListId, newListId, userId, now);
+  }
+}
+
+export async function moveTask(
+  id: string,
+  input: Omit<MoveTaskInput, "expectedVersion">,
+  expectedVersion: number,
+  userId: string,
+  now: string,
+): Promise<Task> {
+  const existing = await getTaskById(id);
+  if (!existing) {
+    throw new NotFoundError(`Task ${id} not found`);
+  }
+
+  if (input.parentId) {
+    const parent = await getTaskById(input.parentId);
+    if (!parent) {
+      throw new NotFoundError(`Parent task ${input.parentId} not found`);
+    }
+    if (parent.listId !== input.listId) {
+      throw new ValidationError("parentId 所在列表与目标列表不一致");
+    }
+    let current: Task | null = parent;
+    while (current) {
+      if (current.id === id || current.parentId === id) {
+        throw new ValidationError("不能将任务移动到自身或其子任务下");
+      }
+      current = current.parentId ? await getTaskById(current.parentId) : null;
+    }
+  }
+
+  const next: Task = {
+    ...existing,
+    listId: input.listId,
+    parentId: input.parentId,
+    order: input.order,
+    version: existing.version + 1,
+    updatedAt: now,
+    updatedBy: userId,
+  };
+
+  try {
+    await documentClient.send(
+      new PutCommand({
+        TableName: getTableName(),
+        Item: toRecord(next),
+        ConditionExpression:
+          "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+        ExpressionAttributeValues: { ":expectedVersion": expectedVersion },
+      }),
+    );
+  } catch (error) {
+    if (error instanceof ConditionalCheckFailedException) {
+      throw new ConflictError(`Task ${id} version mismatch`);
+    }
+    throw error;
+  }
+
+  if (existing.listId !== input.listId) {
+    try {
+      await cascadeListId(id, existing.listId, input.listId, userId, now);
+    } catch (error) {
+      console.error(`Failed to cascade list move for task ${id}`, error);
+    }
+  }
+
+  return next;
 }
 
 export async function deleteTask(

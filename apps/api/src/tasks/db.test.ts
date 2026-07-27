@@ -15,14 +15,18 @@ import {
   createTask,
   deleteTask,
   getTaskTree,
+  moveTask,
   queryTasksByList,
   restoreTask,
   updateTask,
 } from "./db.js";
 
 const LIST_ID = "550e8400-e29b-41d4-a716-446655440000";
+const OTHER_LIST_ID = "550e8400-e29b-41d4-a716-446655440001";
 const TASK_ID = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
 const PARENT_ID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+const CHILD_ID = "6ba7b812-9dad-11d1-80b4-00c04fd430c8";
+const GRANDCHILD_ID = "6ba7b813-9dad-11d1-80b4-00c04fd430c8";
 const USER_ID = "d92a155c-70a1-70cf-8bd5-0dd5d4772093";
 const NOW = "2026-01-01T00:00:00.000Z";
 
@@ -251,8 +255,6 @@ describe("queryTasksByList", () => {
 });
 
 const ROOT_ID = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
-const CHILD_ID = "6ba7b812-9dad-11d1-80b4-00c04fd430c8";
-const GRANDCHILD_ID = "6ba7b813-9dad-11d1-80b4-00c04fd430c8";
 const DELETED_CHILD_ID = "6ba7b814-9dad-11d1-80b4-00c04fd430c8";
 
 describe("getTaskTree", () => {
@@ -684,5 +686,277 @@ describe("restoreTask", () => {
     await expect(restoreTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
       NotFoundError,
     );
+  });
+});
+
+describe("moveTask", () => {
+  beforeEach(() => {
+    process.env.TABLE_NAME = "test-table";
+    sendMock.mockReset();
+  });
+
+  afterEach(() => {
+    // biome-ignore lint/performance/noDelete: need to actually remove the env var
+    delete process.env.TABLE_NAME;
+  });
+
+  function mockChildrenQuery(items: Record<string, unknown>[]) {
+    return { Items: items };
+  }
+
+  it("moves a root task to another list and bumps version", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) }) // get task
+      .mockResolvedValueOnce({}) // conditional put
+      .mockResolvedValueOnce(mockChildrenQuery([])); // cascade children query
+
+    const result = await moveTask(
+      TASK_ID,
+      { listId: OTHER_LIST_ID, parentId: null, order: 5 },
+      1,
+      USER_ID,
+      NOW,
+    );
+
+    expect(result.listId).toBe(OTHER_LIST_ID);
+    expect(result.version).toBe(2);
+    const putInput = sendMock.mock.calls[1][0].input;
+    expect(putInput.ConditionExpression).toBe(
+      "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+    );
+    expect(putInput.ExpressionAttributeValues).toEqual({
+      ":expectedVersion": 1,
+    });
+    expect(putInput.Item).toMatchObject({
+      listId: OTHER_LIST_ID,
+      parentId: null,
+      order: 5,
+      version: 2,
+      updatedBy: USER_ID,
+    });
+    expect(putInput.Item.GSI1SK).toContain(`LIST#${OTHER_LIST_ID}#`);
+  });
+
+  it("moves a task under a parent in another list", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) }) // get task
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({ id: PARENT_ID, listId: OTHER_LIST_ID }),
+      }) // get parent
+      .mockResolvedValueOnce({}) // conditional put
+      .mockResolvedValueOnce(mockChildrenQuery([])); // cascade children query
+
+    const result = await moveTask(
+      TASK_ID,
+      { listId: OTHER_LIST_ID, parentId: PARENT_ID, order: 1 },
+      1,
+      USER_ID,
+      NOW,
+    );
+
+    expect(result.listId).toBe(OTHER_LIST_ID);
+    expect(result.parentId).toBe(PARENT_ID);
+  });
+
+  it("does not query children when the list does not change", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) }) // get task
+      .mockResolvedValueOnce({}); // conditional put
+
+    await moveTask(
+      TASK_ID,
+      { listId: LIST_ID, parentId: null, order: 9 },
+      1,
+      USER_ID,
+      NOW,
+    );
+
+    expect(sendMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("cascades listId to descendants with version bumps", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) }) // get task
+      .mockResolvedValueOnce({}) // conditional put for the moved task
+      .mockResolvedValueOnce(
+        mockChildrenQuery([
+          makeDdbRecord({ id: CHILD_ID, parentId: TASK_ID, version: 3 }),
+        ]),
+      ) // children of moved task
+      .mockResolvedValueOnce({}) // put child
+      .mockResolvedValueOnce(
+        mockChildrenQuery([
+          makeDdbRecord({ id: GRANDCHILD_ID, parentId: CHILD_ID, version: 1 }),
+        ]),
+      ) // children of child
+      .mockResolvedValueOnce({}) // put grandchild
+      .mockResolvedValueOnce(mockChildrenQuery([])); // children of grandchild
+
+    await moveTask(
+      TASK_ID,
+      { listId: OTHER_LIST_ID, parentId: null, order: 0 },
+      1,
+      USER_ID,
+      NOW,
+    );
+
+    const childPut = sendMock.mock.calls[3][0].input.Item;
+    expect(childPut).toMatchObject({
+      id: CHILD_ID,
+      listId: OTHER_LIST_ID,
+      version: 4,
+    });
+    expect(childPut.GSI1SK).toContain(`LIST#${OTHER_LIST_ID}#`);
+    const grandchildPut = sendMock.mock.calls[5][0].input.Item;
+    expect(grandchildPut).toMatchObject({
+      id: GRANDCHILD_ID,
+      listId: OTHER_LIST_ID,
+      version: 2,
+    });
+    // descendants are queried under the OLD list id
+    const grandchildQuery = sendMock.mock.calls[4][0].input;
+    expect(grandchildQuery.ExpressionAttributeValues[":prefix"]).toBe(
+      `LIST#${LIST_ID}#PARENT#${CHILD_ID}#`,
+    );
+  });
+
+  it("logs and continues when the cascade fails", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({}) // conditional put succeeds
+      .mockRejectedValueOnce(new Error("cascade boom")); // children query fails
+
+    const result = await moveTask(
+      TASK_ID,
+      { listId: OTHER_LIST_ID, parentId: null, order: 0 },
+      1,
+      USER_ID,
+      NOW,
+    );
+
+    expect(result.listId).toBe(OTHER_LIST_ID);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it("throws NotFoundError when the task does not exist", async () => {
+    sendMock.mockResolvedValueOnce({});
+    await expect(
+      moveTask(
+        TASK_ID,
+        { listId: OTHER_LIST_ID, parentId: null, order: 0 },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("throws NotFoundError when the parent does not exist", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({}); // parent missing
+
+    await expect(
+      moveTask(
+        TASK_ID,
+        { listId: OTHER_LIST_ID, parentId: PARENT_ID, order: 0 },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it("rejects a parent that lives in another list", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ id: PARENT_ID }) }); // parent in LIST_ID
+
+    await expect(
+      moveTask(
+        TASK_ID,
+        { listId: OTHER_LIST_ID, parentId: PARENT_ID, order: 0 },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("rejects moving a task under itself", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
+      .mockResolvedValueOnce({ Item: makeDdbRecord({}) }); // parent is the task itself
+
+    await expect(
+      moveTask(
+        TASK_ID,
+        { listId: LIST_ID, parentId: TASK_ID, order: 0 },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("rejects moving a task under its own descendant", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) }) // the task
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({ id: CHILD_ID, parentId: TASK_ID }),
+      }); // parent candidate is a direct child
+
+    await expect(
+      moveTask(
+        TASK_ID,
+        { listId: LIST_ID, parentId: CHILD_ID, order: 0 },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("stops the ancestor walk when a mid-chain ancestor is missing", async () => {
+    sendMock
+      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) }) // the task
+      .mockResolvedValueOnce({
+        Item: makeDdbRecord({ id: PARENT_ID, parentId: GRANDCHILD_ID }),
+      }) // parent whose own parent is gone
+      .mockResolvedValueOnce({}) // missing mid-chain ancestor
+      .mockResolvedValueOnce({}) // conditional put
+      .mockResolvedValueOnce(mockChildrenQuery([])); // cascade
+
+    const result = await moveTask(
+      TASK_ID,
+      { listId: LIST_ID, parentId: PARENT_ID, order: 0 },
+      1,
+      USER_ID,
+      NOW,
+    );
+
+    expect(result.parentId).toBe(PARENT_ID);
+  });
+
+  it("throws ConflictError on version mismatch", async () => {
+    sendMock.mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) });
+    sendMock.mockRejectedValueOnce(
+      new ConditionalCheckFailedException({
+        message: "mismatch",
+        $metadata: {},
+      }),
+    );
+
+    await expect(
+      moveTask(
+        TASK_ID,
+        { listId: OTHER_LIST_ID, parentId: null, order: 0 },
+        1,
+        USER_ID,
+        NOW,
+      ),
+    ).rejects.toBeInstanceOf(ConflictError);
   });
 });
