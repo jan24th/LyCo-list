@@ -4,20 +4,32 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   LISTS_QUERY_KEY,
   useCreateListMutation,
+  useDeleteListMutation,
   useListsQuery,
+  useRestoreListMutation,
   useUpdateListMutation,
 } from "./use-lists";
 
-const { mockFetchLists, mockCreateList, mockUpdateList } = vi.hoisted(() => ({
+const {
+  mockFetchLists,
+  mockCreateList,
+  mockUpdateList,
+  mockDeleteList,
+  mockRestoreList,
+} = vi.hoisted(() => ({
   mockFetchLists: vi.fn(),
   mockCreateList: vi.fn(),
   mockUpdateList: vi.fn(),
+  mockDeleteList: vi.fn(),
+  mockRestoreList: vi.fn(),
 }));
 
 vi.mock("@/lib/lists", () => ({
   fetchLists: mockFetchLists,
   createList: mockCreateList,
   updateList: mockUpdateList,
+  deleteList: mockDeleteList,
+  restoreList: mockRestoreList,
 }));
 
 afterEach(() => {
@@ -64,6 +76,36 @@ describe("useCreateListMutation", () => {
       },
       expect.anything(),
     );
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: LISTS_QUERY_KEY });
+  });
+});
+
+describe("useDeleteListMutation", () => {
+  it("calls deleteList and invalidates the lists query on success", async () => {
+    mockDeleteList.mockResolvedValueOnce({ id: "1", version: 2 });
+
+    const { result, client } = renderWithQuery(() => useDeleteListMutation());
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    result.current.mutate({ id: "1", expectedVersion: 1 });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockDeleteList).toHaveBeenCalledWith("1", 1);
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: LISTS_QUERY_KEY });
+  });
+});
+
+describe("useRestoreListMutation", () => {
+  it("calls restoreList and invalidates the lists query on success", async () => {
+    mockRestoreList.mockResolvedValueOnce({ id: "1", version: 3 });
+
+    const { result, client } = renderWithQuery(() => useRestoreListMutation());
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    result.current.mutate({ id: "1", expectedVersion: 2 });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockRestoreList).toHaveBeenCalledWith("1", 2);
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: LISTS_QUERY_KEY });
   });
 });

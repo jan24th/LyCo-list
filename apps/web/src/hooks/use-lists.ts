@@ -1,4 +1,10 @@
-import { createList, fetchLists, updateList } from "@/lib/lists";
+import {
+  createList,
+  deleteList,
+  fetchLists,
+  restoreList,
+  updateList,
+} from "@/lib/lists";
 import type { ListUpdateBody } from "@/lib/lists";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -15,6 +21,38 @@ export function useCreateListMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createList,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: LISTS_QUERY_KEY });
+    },
+  });
+}
+
+export function useDeleteListMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      expectedVersion,
+    }: {
+      id: string;
+      expectedVersion: number;
+    }) => deleteList(id, expectedVersion),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: LISTS_QUERY_KEY });
+    },
+  });
+}
+
+export function useRestoreListMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      expectedVersion,
+    }: {
+      id: string;
+      expectedVersion: number;
+    }) => restoreList(id, expectedVersion),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: LISTS_QUERY_KEY });
     },
