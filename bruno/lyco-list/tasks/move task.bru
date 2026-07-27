@@ -1,0 +1,20 @@
+meta {
+  name: move task
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/tasks/{{taskId}}/move
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "listId": "{{listId}}",
+    "parentId": null,
+    "order": 0,
+    "expectedVersion": 1
+  }
+}

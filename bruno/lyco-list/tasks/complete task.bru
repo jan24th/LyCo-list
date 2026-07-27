@@ -1,0 +1,17 @@
+meta {
+  name: complete task
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/tasks/{{taskId}}/complete
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "expectedVersion": 1
+  }
+}
