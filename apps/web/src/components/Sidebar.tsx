@@ -1,7 +1,9 @@
-import { useListsQuery } from "@/hooks/use-lists";
+import { useListsQuery, useRestoreListMutation } from "@/hooks/use-lists";
 import type { List } from "@lyco/shared";
 import { Calendar, CheckCircle, Circle, Flag, Inbox, User } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { DeleteListDialog } from "./DeleteListDialog";
 import { EditListDialog } from "./EditListDialog";
 import { ListSettingsMenu } from "./ListSettingsMenu";
 import { NewListDialog } from "./NewListDialog";
@@ -20,7 +22,25 @@ const linkClasses =
 
 export function Sidebar() {
   const { data, isLoading, error } = useListsQuery();
+  const restoreMutation = useRestoreListMutation();
   const [editingList, setEditingList] = useState<List | null>(null);
+  const [deletingList, setDeletingList] = useState<List | null>(null);
+
+  function handleDeleted(deletedList: List) {
+    toast.success(`「${deletedList.name}」已删除`, {
+      duration: 5000,
+      action: {
+        label: "撤销",
+        onClick: () =>
+          restoreMutation.mutate(
+            { id: deletedList.id, expectedVersion: deletedList.version },
+            {
+              onError: (restoreError) => toast.error(restoreError.message),
+            },
+          ),
+      },
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -61,7 +81,7 @@ export function Sidebar() {
               <ListSettingsMenu
                 list={list}
                 onEdit={setEditingList}
-                onDelete={() => {}}
+                onDelete={setDeletingList}
               />
             </li>
           ))}
@@ -78,6 +98,18 @@ export function Sidebar() {
               setEditingList(null);
             }
           }}
+        />
+      )}
+      {deletingList && (
+        <DeleteListDialog
+          list={deletingList}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeletingList(null);
+            }
+          }}
+          onDeleted={handleDeleted}
         />
       )}
     </div>

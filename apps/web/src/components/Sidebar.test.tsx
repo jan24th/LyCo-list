@@ -1,11 +1,23 @@
 import type { List } from "@lyco/shared";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Sidebar } from "./Sidebar";
 
-const { mockUseListsQuery } = vi.hoisted(() => ({
+const {
+  mockUseListsQuery,
+  mockUseDeleteListMutation,
+  mockUseRestoreListMutation,
+  mockToast,
+} = vi.hoisted(() => ({
   mockUseListsQuery: vi.fn(),
+  mockUseDeleteListMutation: vi.fn(),
+  mockUseRestoreListMutation: vi.fn(),
+  mockToast: { success: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock("sonner", () => ({
+  toast: mockToast,
 }));
 
 vi.mock("@/hooks/use-lists", () => ({
@@ -20,6 +32,8 @@ vi.mock("@/hooks/use-lists", () => ({
     isPending: false,
     error: null,
   }),
+  useDeleteListMutation: () => mockUseDeleteListMutation(),
+  useRestoreListMutation: () => mockUseRestoreListMutation(),
 }));
 
 const customList: List = {
@@ -46,6 +60,20 @@ function mockQuery(overrides: Record<string, unknown> = {}) {
 describe("Sidebar", () => {
   beforeEach(() => {
     mockUseListsQuery.mockReset();
+    mockUseDeleteListMutation.mockReset();
+    mockUseRestoreListMutation.mockReset();
+    mockToast.success.mockReset();
+    mockToast.error.mockReset();
+    mockUseDeleteListMutation.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      error: null,
+    });
+    mockUseRestoreListMutation.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      error: null,
+    });
   });
 
   it("renders all smart list entries", () => {
@@ -138,7 +166,7 @@ describe("Sidebar", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("keeps the list when delete is clicked before 008C is wired", async () => {
+  it("opens the delete confirmation dialog when delete is clicked", async () => {
     const user = userEvent.setup();
     mockQuery({ data: { items: [customList] } });
     render(<Sidebar />);
@@ -146,6 +174,111 @@ describe("Sidebar", () => {
     await user.click(screen.getByRole("button", { name: "列表设置" }));
     await user.click(await screen.findByRole("menuitem", { name: "删除" }));
 
-    expect(screen.getByRole("link", { name: /购物/ })).toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("删除列表")).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("购物");
+  });
+
+  it("deletes the list and shows an undo toast on confirm", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: { items: [customList] } });
+    const deleteMutate = vi.fn();
+    mockUseDeleteListMutation.mockReturnValue({
+      mutate: deleteMutate,
+      isPending: false,
+      error: null,
+    });
+    render(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "列表设置" }));
+    await user.click(await screen.findByRole("menuitem", { name: "删除" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "删除" }));
+
+    expect(deleteMutate).toHaveBeenCalledWith(
+      { id: customList.id, expectedVersion: 1 },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+
+    act(() =>
+      deleteMutate.mock.calls[0][1].onSuccess({ ...customList, version: 2 }),
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mockToast.success).toHaveBeenCalledWith(
+      "「购物」已删除",
+      expect.objectContaining({
+        duration: 5000,
+        action: expect.objectContaining({ label: "撤销" }),
+      }),
+    );
+  });
+
+  it("restores the list with the deleted version when undo is clicked", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: { items: [customList] } });
+    const deleteMutate = vi.fn();
+    mockUseDeleteListMutation.mockReturnValue({
+      mutate: deleteMutate,
+      isPending: false,
+      error: null,
+    });
+    const restoreMutate = vi.fn();
+    mockUseRestoreListMutation.mockReturnValue({
+      mutate: restoreMutate,
+      isPending: false,
+      error: null,
+    });
+    render(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "列表设置" }));
+    await user.click(await screen.findByRole("menuitem", { name: "删除" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "删除" }));
+    act(() =>
+      deleteMutate.mock.calls[0][1].onSuccess({ ...customList, version: 2 }),
+    );
+
+    const toastConfig = mockToast.success.mock.calls[0][1];
+    toastConfig.action.onClick();
+
+    expect(restoreMutate).toHaveBeenCalledWith(
+      { id: customList.id, expectedVersion: 2 },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it("shows an error toast when restore fails", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: { items: [customList] } });
+    const deleteMutate = vi.fn();
+    mockUseDeleteListMutation.mockReturnValue({
+      mutate: deleteMutate,
+      isPending: false,
+      error: null,
+    });
+    const restoreMutate = vi.fn();
+    mockUseRestoreListMutation.mockReturnValue({
+      mutate: restoreMutate,
+      isPending: false,
+      error: null,
+    });
+    render(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "列表设置" }));
+    await user.click(await screen.findByRole("menuitem", { name: "删除" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "删除" }));
+    act(() =>
+      deleteMutate.mock.calls[0][1].onSuccess({ ...customList, version: 2 }),
+    );
+
+    const toastConfig = mockToast.success.mock.calls[0][1];
+    toastConfig.action.onClick();
+    restoreMutate.mock.calls[0][1].onError(
+      new Error("数据已过期，请刷新后重试"),
+    );
+
+    expect(mockToast.error).toHaveBeenCalledWith("数据已过期，请刷新后重试");
   });
 });
