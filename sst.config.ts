@@ -238,6 +238,7 @@ export default $config({
             "dynamodb:DeleteItem",
             "dynamodb:TransactWriteItems",
             "dynamodb:Query",
+            "dynamodb:Scan",
           ],
           resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
         },
