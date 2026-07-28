@@ -1,6 +1,6 @@
 Title: 实现 Search 接口
 Old-ID: 015
-Status: needs-triage
+Status: resolved
 Labels: api,search
 Estimate: 5
 Blocked by: ../../lists/issues/01-实现列表crud软删除和恢复.md, ../../tasks/issues/02-实现任务与无级子任务crud.md

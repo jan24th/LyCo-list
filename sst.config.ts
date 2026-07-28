@@ -273,6 +273,22 @@ export default $config({
     api.route("PATCH /api/notifications/{id}/read", notificationHandler, listAuth);
     api.route("ANY /api/notifications/{proxy+}", notificationHandler, listAuth);
 
+    const searchHandler = {
+      handler: "apps/api/src/search/index.handler",
+      runtime: "nodejs22.x",
+      environment: {
+        TABLE_NAME: table.name,
+      },
+      permissions: [
+        {
+          actions: ["dynamodb:Query"],
+          resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
+        },
+      ],
+    };
+
+    api.route("GET /api/search", searchHandler, listAuth);
+
     const cleanupHandler = {
       handler: "apps/api/src/cleanup/index.handler",
       runtime: "nodejs22.x",
