@@ -1,0 +1,15 @@
+meta {
+  name: list notifications
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/notifications?limit=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  limit: 50
+}

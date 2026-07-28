@@ -1,6 +1,6 @@
 Title: 实现通知查询、标记已读和 TTL
 Old-ID: 013
-Status: needs-triage
+Status: resolved
 Labels: api,notifications
 Estimate: 5
 Blocked by: ../../tasks/issues/04-实现assign事务与幂等分配通知.md, ../../reminders/issues/01-实现提醒crud与process-due.md
