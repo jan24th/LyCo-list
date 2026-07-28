@@ -245,6 +245,51 @@ describe("search", () => {
     expect(result.nextCursor).toBeUndefined();
   });
 
+  it("loops through DynamoDB pagination for tasks", async () => {
+    const task1 = makeTaskRecord({ title: "page1" });
+    const task2 = makeTaskRecord({
+      id: "task-2",
+      title: "page2",
+      updatedAt: "2026-02-01T00:00:00.000Z",
+    });
+
+    // First task page with LastEvaluatedKey, second page without
+    sendMock
+      .mockResolvedValueOnce({
+        Items: [task1],
+        LastEvaluatedKey: { PK: "TASK#last", SK: "METADATA" },
+      })
+      .mockResolvedValueOnce({ Items: [task2] }) // second task page
+      .mockResolvedValueOnce({ Items: [] }); // lists query
+
+    const result = await search("page", 50);
+
+    expect(result.items).toHaveLength(2);
+    expect(sendMock).toHaveBeenCalledTimes(3); // 2 task queries + 1 list query
+  });
+
+  it("loops through DynamoDB pagination for lists", async () => {
+    const list1 = makeListRecord({ name: "page-a" });
+    const list2 = makeListRecord({
+      id: "list-2",
+      name: "page-b",
+      updatedAt: "2026-02-01T00:00:00.000Z",
+    });
+
+    sendMock
+      .mockResolvedValueOnce({ Items: [] }) // no tasks
+      .mockResolvedValueOnce({
+        Items: [list1],
+        LastEvaluatedKey: { PK: "LIST#last", SK: "METADATA" },
+      })
+      .mockResolvedValueOnce({ Items: [list2] }); // second list page
+
+    const result = await search("page", 50);
+
+    expect(result.items).toHaveLength(2);
+    expect(sendMock).toHaveBeenCalledTimes(3);
+  });
+
   it("queries with default limit of 50", async () => {
     sendMock
       .mockResolvedValueOnce({ Items: [] })
