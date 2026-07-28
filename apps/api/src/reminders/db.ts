@@ -563,11 +563,10 @@ export async function processDueReminders(
           ConditionExpression:
             "#version = :expectedVersion AND isEnabled = :isEnabled",
           UpdateExpression: nextTriggerAt
-            ? "SET triggerAt = :nextTrigger, #version = :nextVersion, updatedAt = :now, updatedBy = :updatedBy ADD #versionIncrement :versionIncrement"
+            ? "SET triggerAt = :nextTrigger, #version = :nextVersion, updatedAt = :now, updatedBy = :updatedBy"
             : "SET isEnabled = :isEnabledFalse, #version = :nextVersion, updatedAt = :now, updatedBy = :updatedBy",
           ExpressionAttributeNames: {
             "#version": "version",
-            "#versionIncrement": "version",
           },
           ExpressionAttributeValues: nextTriggerAt
             ? {
@@ -577,7 +576,6 @@ export async function processDueReminders(
                 ":nextVersion": nextVersion,
                 ":now": now,
                 ":updatedBy": "system",
-                ":versionIncrement": 1,
               }
             : {
                 ":expectedVersion": reminder.version,

@@ -687,7 +687,7 @@ describe("processDueReminders", () => {
     const updateItem = sendMock.mock.calls[2][0].input.TransactItems[0].Update;
     expect(updateItem.UpdateExpression).not.toContain("isEnabled = :isEnabled");
     expect(updateItem.UpdateExpression).toContain("triggerAt = :nextTrigger");
-    expect(updateItem.ExpressionAttributeValues[":versionIncrement"]).toBe(1);
+    expect(updateItem.ExpressionAttributeValues[":nextVersion"]).toBe(2);
   });
 
   it("sends notifications to task assignees when present", async () => {
