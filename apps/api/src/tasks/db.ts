@@ -12,9 +12,11 @@ import {
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
+  ConflictError,
   type CursorKey,
   type MoveTaskInput,
   type Notification,
+  NotFoundError,
   type Task,
   type TaskInput,
   type TaskUpdateBody,
@@ -30,20 +32,6 @@ function getTableName(): string {
     throw new Error("TABLE_NAME environment variable is not set");
   }
   return tableName;
-}
-
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
-}
-
-export class ConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConflictError";
-  }
 }
 
 function buildKeys(id: string) {

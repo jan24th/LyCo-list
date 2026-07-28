@@ -1,5 +1,7 @@
 import {
+  ConflictError,
   type CursorKey,
+  NotFoundError,
   ValidationError,
   buildResponse,
   decodeCursor,
@@ -13,8 +15,6 @@ import type {
   APIGatewayProxyHandlerV2WithJWTAuthorizer,
 } from "aws-lambda";
 import {
-  ConflictError,
-  NotFoundError,
   listNotifications,
   markNotificationRead,
 } from "./db.js";

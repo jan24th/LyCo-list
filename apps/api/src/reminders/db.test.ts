@@ -10,10 +10,8 @@ import {
   ConditionalCheckFailedException,
   TransactionCanceledException,
 } from "@aws-sdk/client-dynamodb";
-import { ValidationError, notificationSchema } from "@lyco/shared";
+import { ConflictError, NotFoundError, ValidationError, notificationSchema } from "@lyco/shared";
 import {
-  ConflictError,
-  NotFoundError,
   advanceRecurrence,
   createReminder,
   createReminderNotificationId,

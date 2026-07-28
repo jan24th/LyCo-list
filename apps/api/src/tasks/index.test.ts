@@ -21,19 +21,15 @@ const dbMock = vi.hoisted(() => ({
 
 vi.mock("./db.js", () => ({
   ...dbMock,
-  ConflictError: class ConflictError extends Error {},
-  NotFoundError: class NotFoundError extends Error {},
+  ConflictError,
+  NotFoundError,
 }));
 
-import { encodeCursor } from "@lyco/shared";
+import { ConflictError, NotFoundError, encodeCursor } from "@lyco/shared";
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyHandlerV2WithJWTAuthorizer,
 } from "aws-lambda";
-import {
-  ConflictError as DbConflictError,
-  NotFoundError as DbNotFoundError,
-} from "./db.js";
 import { handler } from "./index.js";
 
 const LIST_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -184,7 +180,7 @@ describe("tasks handler", () => {
 
   it("returns 404 when the parent task does not exist", async () => {
     dbMock.createTask.mockRejectedValueOnce(
-      new DbNotFoundError("parent not found"),
+      new NotFoundError("parent not found"),
     );
 
     const result = await invokeHandler(
@@ -412,7 +408,7 @@ describe("tasks handler", () => {
 
   it("returns 409 on conflict error", async () => {
     dbMock.updateTask.mockRejectedValueOnce(
-      new DbConflictError("version mismatch"),
+      new ConflictError("version mismatch"),
     );
 
     const result = await invokeHandler(
@@ -426,7 +422,7 @@ describe("tasks handler", () => {
   });
 
   it("returns 404 on not found error", async () => {
-    dbMock.deleteTask.mockRejectedValueOnce(new DbNotFoundError("not found"));
+    dbMock.deleteTask.mockRejectedValueOnce(new NotFoundError("not found"));
 
     const result = await invokeHandler(
       createEvent("DELETE", `/api/tasks/${TASK_ID}`, {
@@ -520,7 +516,7 @@ describe("tasks handler", () => {
 
   it("returns 404 when completing a missing task", async () => {
     dbMock.completeTask.mockRejectedValueOnce(
-      new DbNotFoundError("task not found"),
+      new NotFoundError("task not found"),
     );
 
     const result = await invokeHandler(
@@ -534,7 +530,7 @@ describe("tasks handler", () => {
 
   it("returns 409 on complete version conflict", async () => {
     dbMock.completeTask.mockRejectedValueOnce(
-      new DbConflictError("version mismatch"),
+      new ConflictError("version mismatch"),
     );
 
     const result = await invokeHandler(
@@ -617,7 +613,7 @@ describe("tasks handler", () => {
 
   it("returns 409 on move version conflict", async () => {
     dbMock.moveTask.mockRejectedValueOnce(
-      new DbConflictError("version mismatch"),
+      new ConflictError("version mismatch"),
     );
 
     const result = await invokeHandler(

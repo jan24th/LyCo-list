@@ -7,8 +7,8 @@ vi.mock("../tasks/client.js", () => ({
 }));
 
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
+import { ConflictError } from "@lyco/shared";
 import {
-  ConflictError,
   getNotificationById,
   listNotifications,
   markNotificationRead,

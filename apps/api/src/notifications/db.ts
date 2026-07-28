@@ -1,12 +1,7 @@
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { GetCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import type { CursorKey, Notification } from "@lyco/shared";
+import { ConflictError, type CursorKey, type Notification } from "@lyco/shared";
 import { documentClient } from "../tasks/client.js";
-
-// Re-export for convenience
-export { ConflictError, NotFoundError } from "../tasks/db.js";
-
-import { ConflictError } from "../tasks/db.js";
 
 function getTableName(): string {
   const tableName = process.env.TABLE_NAME;

@@ -8,16 +8,12 @@ const dbMock = vi.hoisted(() => ({
 
 vi.mock("./db.js", () => ({
   ...dbMock,
-  ConflictError: class ConflictError extends Error {},
-  NotFoundError: class NotFoundError extends Error {},
+  ConflictError,
+  NotFoundError,
 }));
 
-import { ValidationError, encodeCursor } from "@lyco/shared";
+import { ConflictError, NotFoundError, ValidationError, encodeCursor } from "@lyco/shared";
 import type { APIGatewayProxyEventV2WithJWTAuthorizer } from "aws-lambda";
-import {
-  ConflictError as DbConflictError,
-  NotFoundError as DbNotFoundError,
-} from "./db.js";
 import { handler } from "./index.js";
 
 const NOTIFICATION_ID = "7cb8c922-aebd-22e2-91c5-11d15ee541d9";
@@ -230,7 +226,7 @@ describe("notifications handler", () => {
 
     it("returns 409 on version conflict", async () => {
       dbMock.markNotificationRead.mockRejectedValueOnce(
-        new DbConflictError("version mismatch"),
+        new ConflictError("version mismatch"),
       );
 
       const event = createEvent(

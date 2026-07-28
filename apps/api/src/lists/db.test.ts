@@ -7,9 +7,8 @@ vi.mock("./client.js", () => ({
 }));
 
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
+import { ConflictError, NotFoundError } from "@lyco/shared";
 import {
-  ConflictError,
-  NotFoundError,
   createList,
   deleteList,
   getListById,

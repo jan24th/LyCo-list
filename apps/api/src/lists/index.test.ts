@@ -18,16 +18,15 @@ const dbMock = vi.hoisted(() => ({
 
 vi.mock("./db.js", () => ({
   ...dbMock,
-  ConflictError: class ConflictError extends Error {},
-  NotFoundError: class NotFoundError extends Error {},
+  ConflictError,
+  NotFoundError,
 }));
 
-import { encodeCursor } from "@lyco/shared";
+import { ConflictError, NotFoundError, encodeCursor } from "@lyco/shared";
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyHandlerV2WithJWTAuthorizer,
 } from "aws-lambda";
-import { ConflictError, NotFoundError } from "./db.js";
 import { handler } from "./index.js";
 
 function createEvent(

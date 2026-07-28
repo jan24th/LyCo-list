@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import {
   ConditionalCheckFailedException,
   TransactionCanceledException,
@@ -13,8 +13,10 @@ import {
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
+  ConflictError,
   type CursorKey,
   type Notification,
+  NotFoundError,
   type Reminder,
   type ReminderInput,
   type ReminderUpdate,
@@ -39,20 +41,6 @@ function getTableName(): string {
     throw new Error("TABLE_NAME environment variable is not set");
   }
   return tableName;
-}
-
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
-}
-
-export class ConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConflictError";
-  }
 }
 
 function buildKeys(id: string) {

@@ -3,7 +3,7 @@ import {
   GetCommand,
   QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
-import type { CursorKey, DeletionJob } from "@lyco/shared";
+import type { CursorKey } from "@lyco/shared";
 import { documentClient } from "../tasks/client.js";
 
 function getTableName(): string {

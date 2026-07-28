@@ -19,19 +19,15 @@ const dbMock = vi.hoisted(() => ({
 
 vi.mock("./db.js", () => ({
   ...dbMock,
-  ConflictError: class ConflictError extends Error {},
-  NotFoundError: class NotFoundError extends Error {},
+  ConflictError,
+  NotFoundError,
 }));
 
-import { ValidationError, encodeCursor } from "@lyco/shared";
+import { ConflictError, NotFoundError, ValidationError, encodeCursor } from "@lyco/shared";
 import type {
   APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyHandlerV2WithJWTAuthorizer,
 } from "aws-lambda";
-import {
-  ConflictError as DbConflictError,
-  NotFoundError as DbNotFoundError,
-} from "./db.js";
 import { handler } from "./index.js";
 
 const TASK_ID = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
@@ -148,7 +144,7 @@ describe("reminders handler", () => {
 
     it("returns 404 when task not found", async () => {
       dbMock.createReminder.mockRejectedValueOnce(
-        new DbNotFoundError("Task not found"),
+        new NotFoundError("Task not found"),
       );
 
       const event = createEvent("POST", `/api/tasks/${TASK_ID}/reminders`, {
@@ -234,7 +230,7 @@ describe("reminders handler", () => {
 
     it("returns 409 on version conflict", async () => {
       dbMock.updateReminder.mockRejectedValueOnce(
-        new DbConflictError("version mismatch"),
+        new ConflictError("version mismatch"),
       );
 
       const event = createEvent(
@@ -254,7 +250,7 @@ describe("reminders handler", () => {
 
     it("returns 404 when reminder not found", async () => {
       dbMock.updateReminder.mockRejectedValueOnce(
-        new DbNotFoundError("not found"),
+        new NotFoundError("not found"),
       );
 
       const event = createEvent(
@@ -304,7 +300,7 @@ describe("reminders handler", () => {
 
     it("returns 409 on version conflict", async () => {
       dbMock.deleteReminder.mockRejectedValueOnce(
-        new DbConflictError("version mismatch"),
+        new ConflictError("version mismatch"),
       );
 
       const event = createEvent(
