@@ -273,6 +273,29 @@ export default $config({
     api.route("PATCH /api/notifications/{id}/read", notificationHandler, listAuth);
     api.route("ANY /api/notifications/{proxy+}", notificationHandler, listAuth);
 
+    const cleanupHandler = {
+      handler: "apps/api/src/cleanup/index.handler",
+      runtime: "nodejs22.x",
+      environment: {
+        TABLE_NAME: table.name,
+      },
+      permissions: [
+        {
+          actions: [
+            "dynamodb:GetItem",
+            "dynamodb:Query",
+            "dynamodb:BatchWriteItem",
+          ],
+          resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
+        },
+      ],
+    };
+
+    new sst.aws.CronV2("CleanupCron", {
+      schedule: "rate(5 minutes)",
+      job: cleanupHandler,
+    });
+
     api.route("GET /api/tasks", taskHandler, listAuth);
     api.route("POST /api/tasks", taskHandler, listAuth);
     api.route("ANY /api/tasks/{proxy+}", taskHandler, listAuth);

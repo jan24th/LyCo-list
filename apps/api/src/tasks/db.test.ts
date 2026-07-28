@@ -678,32 +678,47 @@ describe("deleteTask", () => {
     delete process.env.TABLE_NAME;
   });
 
-  it("sets deletedAt and increments version", async () => {
+  it("sets deletedAt, undoUntil, deletionVersion, creates DELETION_JOB, and returns updated task", async () => {
+    const existingRecord = makeDdbRecord({ version: 1, createdBy: USER_ID });
     sendMock
-      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
-      .mockResolvedValueOnce({
-        Attributes: makeDdbRecord({
-          deletedAt: "2026-01-02T00:00:00.000Z",
-          version: 2,
-        }),
-      });
+      .mockResolvedValueOnce({ Item: existingRecord })
+      .mockResolvedValueOnce({}); // TransactWriteCommand
 
-    const result = await deleteTask(
-      TASK_ID,
-      1,
-      USER_ID,
-      "2026-01-02T00:00:00.000Z",
-    );
+    const deleteTime = "2026-01-02T00:00:00.000Z";
+    const result = await deleteTask(TASK_ID, 1, USER_ID, deleteTime);
 
-    expect(result.deletedAt).toBe("2026-01-02T00:00:00.000Z");
+    expect(result.deletedAt).toBe(deleteTime);
+    expect(result.undoUntil).toBe("2026-01-02T00:00:30.000Z");
+    expect(result.deletionVersion).toBe(2);
     expect(result.version).toBe(2);
-    expect(sendMock.mock.calls[1][0].input).toMatchObject({
+
+    const txnCall = sendMock.mock.calls[1][0];
+    const transactItems = txnCall.input.TransactItems;
+    expect(transactItems).toHaveLength(2);
+
+    // First item: Update the task
+    expect(transactItems[0].Update).toMatchObject({
       ConditionExpression:
         "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+      UpdateExpression: expect.stringContaining("undoUntil"),
       ExpressionAttributeValues: expect.objectContaining({
         ":expectedVersion": 1,
         ":nextVersion": 2,
+        ":undoUntil": "2026-01-02T00:00:30.000Z",
+        ":deletionVersion": 2,
       }),
+    });
+
+    // Second item: Create DELETION_JOB
+    expect(transactItems[1].Put.Item).toMatchObject({
+      PK: `DELETION_JOB#TASK#${TASK_ID}`,
+      SK: "METADATA",
+      GSI1PK: "DELETION_JOBS",
+      entityType: "DELETION_JOB",
+      targetType: "TASK",
+      targetId: TASK_ID,
+      deletionVersion: 2,
+      status: "pending",
     });
   });
 
@@ -717,36 +732,14 @@ describe("deleteTask", () => {
   it("throws ConflictError on version mismatch or already deleted", async () => {
     sendMock.mockResolvedValueOnce({ Item: makeDdbRecord({ version: 2 }) });
     sendMock.mockRejectedValueOnce(
-      new ConditionalCheckFailedException({
-        message: "mismatch",
+      new TransactionCanceledException({
+        message: "transaction cancelled",
         $metadata: {},
       }),
     );
 
     await expect(deleteTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
       ConflictError,
-    );
-  });
-
-  it("throws NotFoundError when returned attributes are malformed", async () => {
-    sendMock
-      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
-      .mockResolvedValueOnce({
-        Attributes: { PK: "TASK#x", SK: "METADATA", title: "malformed" },
-      });
-
-    await expect(deleteTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
-      NotFoundError,
-    );
-  });
-
-  it("throws NotFoundError when no attributes are returned", async () => {
-    sendMock
-      .mockResolvedValueOnce({ Item: makeDdbRecord({ version: 1 }) })
-      .mockResolvedValueOnce({});
-
-    await expect(deleteTask(TASK_ID, 1, USER_ID, NOW)).rejects.toBeInstanceOf(
-      NotFoundError,
     );
   });
 });

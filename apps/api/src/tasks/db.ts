@@ -549,32 +549,78 @@ export async function deleteTask(
     throw new NotFoundError(`Task ${id} not found`);
   }
 
+  const nextVersion = existing.version + 1;
+  // undoUntil = now + 30 seconds (ISO 8601)
+  const undoDate = new Date(new Date(now).getTime() + 30_000);
+  const undoUntil = undoDate.toISOString();
+  const deletionVersion = nextVersion;
+
+  // Build DELETION_JOB record
+  const jobId = `TASK#${id}`;
+  const jobRecord = {
+    PK: `DELETION_JOB#${jobId}`,
+    SK: "METADATA",
+    GSI1PK: "DELETION_JOBS",
+    GSI1SK: `RUN#${undoUntil}#JOB#${jobId}`,
+    entityType: "DELETION_JOB",
+    id: jobId,
+    targetType: "TASK",
+    targetId: id,
+    targetCreatedBy: existing.createdBy,
+    deletionVersion,
+    undoUntil,
+    status: "pending",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const tableName = getTableName();
   try {
     const response = await documentClient.send(
-      new UpdateCommand({
-        TableName: getTableName(),
-        Key: buildKeys(id),
-        ConditionExpression:
-          "version = :expectedVersion AND attribute_not_exists(deletedAt)",
-        UpdateExpression:
-          "SET deletedAt = :now, #version = :nextVersion, updatedAt = :now, updatedBy = :userId",
-        ExpressionAttributeNames: { "#version": "version" },
-        ExpressionAttributeValues: {
-          ":expectedVersion": expectedVersion,
-          ":nextVersion": expectedVersion + 1,
-          ":now": now,
-          ":userId": userId,
-        },
-        ReturnValues: "ALL_NEW",
+      new TransactWriteCommand({
+        TransactItems: [
+          {
+            Update: {
+              TableName: tableName,
+              Key: buildKeys(id),
+              ConditionExpression:
+                "version = :expectedVersion AND attribute_not_exists(deletedAt)",
+              UpdateExpression:
+                "SET deletedAt = :now, undoUntil = :undoUntil, deletionVersion = :deletionVersion, #version = :nextVersion, updatedAt = :now, updatedBy = :userId",
+              ExpressionAttributeNames: { "#version": "version" },
+              ExpressionAttributeValues: {
+                ":expectedVersion": expectedVersion,
+                ":nextVersion": nextVersion,
+                ":now": now,
+                ":undoUntil": undoUntil,
+                ":deletionVersion": deletionVersion,
+                ":userId": userId,
+              },
+              ReturnValuesOnConditionCheckFailure: "ALL_OLD",
+            },
+          },
+          {
+            Put: {
+              TableName: tableName,
+              Item: jobRecord,
+              ConditionExpression: "attribute_not_exists(PK)",
+            },
+          },
+        ],
       }),
     );
-    const parsed = toTask(response.Attributes ?? {});
-    if (!parsed) {
-      throw new NotFoundError(`Task ${id} not found`);
-    }
-    return parsed;
+
+    return {
+      ...existing,
+      deletedAt: now,
+      undoUntil,
+      deletionVersion,
+      version: nextVersion,
+      updatedAt: now,
+      updatedBy: userId,
+    };
   } catch (error) {
-    if (error instanceof ConditionalCheckFailedException) {
+    if (error instanceof TransactionCanceledException) {
       throw new ConflictError(`Task ${id} version mismatch`);
     }
     throw error;

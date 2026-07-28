@@ -1,6 +1,6 @@
 Title: 实现 DELETION_JOB 和 Cleanup Lambda
 Old-ID: 018
-Status: needs-triage
+Status: resolved
 Labels: api,cleanup
 Estimate: 5
 Blocked by: ../../infra/issues/04-定义dynamodb单表实体schema与cursor工具.md, ../../lists/issues/01-实现列表crud软删除和恢复.md, ../../tasks/issues/02-实现任务与无级子任务crud.md
