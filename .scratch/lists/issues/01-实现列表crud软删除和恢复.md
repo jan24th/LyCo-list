@@ -1,6 +1,6 @@
 Title: 实现列表 CRUD、软删除和恢复
 Old-ID: 008
-Status: wontfix
+Status: resolved
 Labels: api,lists
 Estimate: 5
 Blocked by: ../../infra/issues/04-定义dynamodb单表实体schema与cursor工具.md, ../../infra/issues/05-实现health接口.md
