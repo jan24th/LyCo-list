@@ -1,6 +1,6 @@
 Title: 更新 Bruno 集合覆盖所有接口
 Old-ID: 019
-Status: needs-triage
+Status: resolved
 Labels: api,testing
 Estimate: 3
 Blocked by: ../../infra/issues/05-实现health接口.md, ../../tasks/issues/01-实现users-assignee列表接口.md, ../../lists/issues/01-实现列表crud软删除和恢复.md, ../../tasks/issues/02-实现任务与无级子任务crud.md, ../../tasks/issues/03-实现任务移动完成恢复和乐观并发.md, ../../tasks/issues/04-实现assign事务与幂等分配通知.md, ../../reminders/issues/01-实现提醒crud与process-due.md, ../../notifications/issues/01-实现通知查询标记已读和ttl.md, ../../search/issues/02-实现search接口.md, ../../cleanup/issues/01-实现deletion-job和cleanup-lambda.md
