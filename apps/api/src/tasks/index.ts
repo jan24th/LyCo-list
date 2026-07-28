@@ -1,14 +1,12 @@
 import { randomUUID } from "node:crypto";
 import {
-  ConflictError,
-  CursorError,
   type CursorKey,
-  NotFoundError,
   ValidationError,
   buildResponse,
   decodeCursor,
   encodeCursor,
   errorResponse,
+  handleError,
   moveTaskInputSchema,
   parseRequest,
   taskCompleteBodySchema,
@@ -143,19 +141,6 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
 
     return buildResponse(404, { error: "Not found" });
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return errorResponse(error.message, "VALIDATION_ERROR", 400);
-    }
-    if (error instanceof NotFoundError) {
-      return errorResponse(error.message, "NOT_FOUND", 404);
-    }
-    if (error instanceof ConflictError) {
-      return errorResponse(error.message, "CONFLICT", 409);
-    }
-    if (error instanceof CursorError) {
-      return errorResponse(error.message, "INVALID_CURSOR", 400);
-    }
-    console.error(error);
-    return errorResponse("failed to process task request");
+    return handleError(error);
   }
 };

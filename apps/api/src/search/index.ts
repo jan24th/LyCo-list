@@ -1,9 +1,9 @@
 import {
   type CursorKey,
-  ValidationError,
   buildResponse,
   decodeCursor,
   encodeCursor,
+  handleError,
   listQuerySchema,
   parseRequest,
 } from "@lyco/shared";
@@ -57,16 +57,6 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
         : {}),
     });
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return buildResponse(400, {
-        error: error.message,
-        code: "VALIDATION_ERROR",
-      });
-    }
-    console.error("Unhandled error:", error);
-    return buildResponse(500, {
-      error: "Internal server error",
-      code: "INTERNAL_ERROR",
-    });
+    return handleError(error);
   }
 };

@@ -1,11 +1,10 @@
 import {
-  ConflictError,
   type CursorKey,
-  NotFoundError,
   ValidationError,
   buildResponse,
   decodeCursor,
   encodeCursor,
+  handleError,
   listQuerySchema,
   markNotificationReadInputSchema,
   parseRequest,
@@ -85,22 +84,6 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
 
     return buildResponse(404, { error: "Not found" });
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return buildResponse(400, {
-        error: error.message,
-        code: "VALIDATION_ERROR",
-      });
-    }
-    if (error instanceof ConflictError) {
-      return buildResponse(409, { error: error.message, code: "CONFLICT" });
-    }
-    if (error instanceof NotFoundError) {
-      return buildResponse(404, { error: error.message, code: "NOT_FOUND" });
-    }
-    console.error("Unhandled error:", error);
-    return buildResponse(500, {
-      error: "Internal server error",
-      code: "INTERNAL_ERROR",
-    });
+    return handleError(error);
   }
 };

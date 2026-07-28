@@ -12,6 +12,7 @@ import {
   decodeCursor,
   encodeCursor,
   errorResponse,
+  handleError,
   listQuerySchema,
   parseRequest,
   userSchema,
@@ -79,14 +80,7 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
       ...(nextCursor ? { nextCursor } : {}),
     });
   } catch (error) {
-    if (error instanceof ValidationError) {
-      return errorResponse(error.message, "VALIDATION_ERROR", 400);
-    }
-    if (error instanceof CursorError) {
-      return errorResponse(error.message, "INVALID_CURSOR", 400);
-    }
-    console.error(error);
-    return errorResponse("failed to list users");
+    return handleError(error);
   }
 };
 
