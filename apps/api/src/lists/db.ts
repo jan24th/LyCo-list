@@ -17,14 +17,7 @@ import {
   listSchema,
 } from "@lyco/shared";
 import { documentClient } from "./client.js";
-
-function getTableName(): string {
-  const tableName = process.env.TABLE_NAME;
-  if (!tableName) {
-    throw new Error("TABLE_NAME environment variable is not set");
-  }
-  return tableName;
-}
+import { getTableName } from "../lib/table.js";
 
 function buildKeys(id: string) {
   return { PK: `LIST#${id}`, SK: "METADATA" };

@@ -2,14 +2,7 @@ import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { GetCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { ConflictError, type CursorKey, type Notification } from "@lyco/shared";
 import { documentClient } from "../tasks/client.js";
-
-function getTableName(): string {
-  const tableName = process.env.TABLE_NAME;
-  if (!tableName) {
-    throw new Error("TABLE_NAME environment variable is not set");
-  }
-  return tableName;
-}
+import { getTableName } from "../lib/table.js";
 
 export async function listNotifications(
   userId: string,

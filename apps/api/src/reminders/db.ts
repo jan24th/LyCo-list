@@ -25,6 +25,7 @@ import {
   reminderSchema,
 } from "@lyco/shared";
 import { documentClient } from "../tasks/client.js";
+import { getTableName } from "../lib/table.js";
 
 // Reuse task types locally to avoid circular dependency
 interface TaskRecord {
@@ -33,14 +34,6 @@ interface TaskRecord {
   assigneeIds: string[];
   recurrence: string;
   deletedAt?: string;
-}
-
-function getTableName(): string {
-  const tableName = process.env.TABLE_NAME;
-  if (!tableName) {
-    throw new Error("TABLE_NAME environment variable is not set");
-  }
-  return tableName;
 }
 
 function buildKeys(id: string) {
@@ -84,7 +77,7 @@ function validateRecurrenceExclusion(
   reminderRecurrence: string,
 ): void {
   if (taskRecurrence !== "none" && reminderRecurrence !== "none") {
-    throw new ValidationError("当任务设置了重复规则时，提醒不能设置重复规则");
+    throw new ValidationError("When a task has a recurrence rule, reminders cannot have recurrence rules");
   }
 }
 
@@ -475,7 +468,7 @@ function toReminderNotificationRecord(
     taskId: reminder.taskId,
     reminderId: reminder.id,
     taskTitle,
-    message: "提醒时间到",
+    message: "Reminder due",
     isRead: false,
     version: 1,
     createdAt: now,

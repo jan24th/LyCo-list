@@ -1,14 +1,7 @@
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import type { CursorKey } from "@lyco/shared";
 import { documentClient } from "../tasks/client.js";
-
-function getTableName(): string {
-  const tableName = process.env.TABLE_NAME;
-  if (!tableName) {
-    throw new Error("TABLE_NAME environment variable is not set");
-  }
-  return tableName;
-}
+import { getTableName } from "../lib/table.js";
 
 export interface SearchResult {
   type: "task" | "list";
