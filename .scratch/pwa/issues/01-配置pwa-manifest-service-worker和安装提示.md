@@ -1,6 +1,6 @@
 Title: 配置 PWA Manifest、Service Worker 和安装提示
 Old-ID: 016
-Status: needs-triage
+Status: resolved
 Labels: web,pwa
 Estimate: 3
 Blocked by: ../../web-shell/issues/03-实现响应式应用壳与移动端导航骨架.md

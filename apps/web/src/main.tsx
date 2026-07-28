@@ -9,6 +9,15 @@ import { queryClient } from "./lib/query-client";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
 
+// Trigger PWA service worker registration on load
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Service worker registration failed — app works without it
+    });
+  });
+}
+
 configureAmplify({
   userPoolId: import.meta.env.VITE_USER_POOL_ID,
   userPoolClientId: import.meta.env.VITE_USER_POOL_CLIENT_ID,
