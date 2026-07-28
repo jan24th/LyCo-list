@@ -1,9 +1,31 @@
-import { Button } from "@/components/ui/button";
-import { apiClient } from "@/lib/api";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { useSmartList } from "@/hooks/use-smart-list";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { getCurrentUser } from "aws-amplify/auth";
+import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { LoginButton } from "../components/LoginButton";
+
+function getSmartListFromHash(): string {
+  if (typeof window === "undefined") return "today";
+  const hash = window.location.hash.replace("#", "");
+  const valid = [
+    "today",
+    "scheduled",
+    "all",
+    "flagged",
+    "completed",
+    "assigned",
+  ];
+  return valid.includes(hash) ? hash : "today";
+}
+
+const SMART_LIST_NAMES: Record<string, string> = {
+  today: "今天",
+  scheduled: "计划",
+  all: "全部",
+  flagged: "已标记",
+  completed: "已完成",
+  assigned: "分配给我",
+};
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -11,52 +33,76 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [verifyResult, setVerifyResult] = useState<string | null>(null);
-  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [listType, setListType] = useState(getSmartListFromHash());
+  const [userId, setUserId] = useState<string | undefined>();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleHashChange = () => setListType(getSmartListFromHash());
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   useEffect(() => {
     getCurrentUser()
       .then((user) => setUserId(user.userId))
-      .catch(() => setUserId(null))
-      .finally(() => setLoading(false));
+      .catch(() => setUserId(undefined));
   }, []);
 
-  async function handleVerifyApi() {
-    setVerifyResult(null);
-    setVerifyError(null);
-    try {
-      const data = await apiClient<{ userId: string }>("/api/verify");
-      setVerifyResult(data.userId);
-    } catch (err) {
-      setVerifyError(err instanceof Error ? err.message : "验证失败");
-    }
-  }
+  const { data, isLoading, error } = useSmartList(listType, userId);
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold">今天</h2>
-      <p className="text-slate-600">智能列表占位页</p>
-      <div>
-        {loading ? (
-          <p>加载中…</p>
-        ) : userId ? (
-          <p>已登录用户：{userId}</p>
-        ) : (
-          <LoginButton />
-        )}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">{SMART_LIST_NAMES[listType]}</h2>
+        <button
+          type="button"
+          className="rounded-md p-2 hover:bg-accent"
+          onClick={() => navigate({ to: "/search" })}
+        >
+          <Search className="size-5" />
+        </button>
       </div>
-      <div className="space-y-2">
-        <Button onClick={() => void handleVerifyApi()}>验证 API</Button>
-        {verifyResult && (
-          <p className="text-green-700">API 用户：{verifyResult}</p>
-        )}
-        {verifyError && <p className="text-red-600">验证失败：{verifyError}</p>}
-      </div>
-      <Link to="/about">
-        <Button>关于</Button>
-      </Link>
+
+      {isLoading && <p className="text-sm text-muted-foreground">加载中…</p>}
+      {error && (
+        <p className="text-sm text-destructive">加载失败：{error.message}</p>
+      )}
+      {data && data.length === 0 && (
+        <p className="text-sm text-muted-foreground">没有任务</p>
+      )}
+      {data && data.length > 0 && (
+        <ul className="space-y-2">
+          {data.map((task) => (
+            <li
+              key={task.id}
+              className="flex items-center gap-3 rounded-md border px-4 py-3"
+            >
+              <input
+                type="checkbox"
+                checked={task.isCompleted}
+                readOnly
+                className="size-4"
+              />
+              <div className="flex-1">
+                <span
+                  className={
+                    task.isCompleted ? "line-through text-muted-foreground" : ""
+                  }
+                >
+                  {task.title}
+                </span>
+                {task.notes && (
+                  <p className="text-sm text-muted-foreground">{task.notes}</p>
+                )}
+              </div>
+              {task.isFlagged && (
+                <span className="text-xs text-orange-500">★</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

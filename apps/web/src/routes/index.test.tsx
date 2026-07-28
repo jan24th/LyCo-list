@@ -6,25 +6,16 @@ import {
   createMemoryHistory,
   createRouter,
 } from "@tanstack/react-router";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-const { mockGetCurrentUser, mockSignInWithRedirect } = vi.hoisted(() => ({
+const { mockGetCurrentUser } = vi.hoisted(() => ({
   mockGetCurrentUser: vi.fn(),
-  mockSignInWithRedirect: vi.fn(),
 }));
 
 vi.mock("aws-amplify/auth", () => ({
   getCurrentUser: mockGetCurrentUser,
-  signInWithRedirect: mockSignInWithRedirect,
-}));
-
-const { mockApiClient } = vi.hoisted(() => ({
-  mockApiClient: vi.fn(),
-}));
-
-vi.mock("@/lib/api", () => ({
-  apiClient: mockApiClient,
+  signInWithRedirect: vi.fn(),
 }));
 
 const { mockFetchLists } = vi.hoisted(() => ({ mockFetchLists: vi.fn() }));
@@ -32,6 +23,12 @@ const { mockFetchLists } = vi.hoisted(() => ({ mockFetchLists: vi.fn() }));
 vi.mock("@/lib/lists", () => ({
   fetchLists: mockFetchLists,
   createList: vi.fn(),
+}));
+
+vi.mock("@/lib/tasks", () => ({
+  fetchTasksByList: vi
+    .fn()
+    .mockResolvedValue({ items: [], nextCursor: undefined }),
 }));
 
 window.scrollTo = vi.fn();
@@ -49,49 +46,12 @@ async function renderRouter(initialUrl: string) {
 }
 
 describe("Home route", () => {
-  it("shows login button when user is not logged in", async () => {
+  it("shows the smart list title", async () => {
     mockGetCurrentUser.mockRejectedValue(new Error("not signed in"));
     await renderRouter("/");
     expect(
-      await screen.findByRole("button", { name: "登录" }),
+      screen.getByRole("heading", { level: 2, name: "今天" }),
     ).toBeInTheDocument();
-  });
-
-  it("shows user id when already logged in", async () => {
-    mockGetCurrentUser.mockResolvedValue({ userId: "user-456" });
-    await renderRouter("/");
-    expect(await screen.findByText(/user-456/)).toBeInTheDocument();
-  });
-
-  it("displays API verify result when button is clicked", async () => {
-    mockGetCurrentUser.mockResolvedValue({ userId: "user-456" });
-    mockApiClient.mockResolvedValue({ userId: "api-user-789" });
-
-    await renderRouter("/");
-    fireEvent.click(screen.getByRole("button", { name: "验证 API" }));
-
-    expect(await screen.findByText(/api-user-789/)).toBeInTheDocument();
-    expect(mockApiClient).toHaveBeenCalledWith("/api/verify");
-  });
-
-  it("displays API verify error on failure", async () => {
-    mockGetCurrentUser.mockResolvedValue({ userId: "user-456" });
-    mockApiClient.mockRejectedValue(new Error("network error"));
-
-    await renderRouter("/");
-    fireEvent.click(screen.getByRole("button", { name: "验证 API" }));
-
-    expect(await screen.findByText(/network error/)).toBeInTheDocument();
-  });
-
-  it("displays generic verify error when rejection is not an Error", async () => {
-    mockGetCurrentUser.mockResolvedValue({ userId: "user-456" });
-    mockApiClient.mockRejectedValue("unknown failure");
-
-    await renderRouter("/");
-    fireEvent.click(screen.getByRole("button", { name: "验证 API" }));
-
-    expect(await screen.findByText(/验证失败/)).toBeInTheDocument();
   });
 
   it("shows the current route title in the application header", async () => {
