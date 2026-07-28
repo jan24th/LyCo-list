@@ -1,0 +1,18 @@
+meta {
+  name: update reminder
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/api/tasks/{{taskId}}/reminders/{{reminderId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "isEnabled": false,
+    "expectedVersion": 1
+  }
+}

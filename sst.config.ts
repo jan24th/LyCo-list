@@ -223,6 +223,56 @@ export default $config({
       ],
     };
 
+    const reminderHandler = {
+      handler: "apps/api/src/reminders/index.handler",
+      runtime: "nodejs22.x",
+      environment: {
+        TABLE_NAME: table.name,
+      },
+      permissions: [
+        {
+          actions: [
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem",
+            "dynamodb:TransactWriteItems",
+            "dynamodb:Query",
+          ],
+          resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
+        },
+      ],
+    };
+
+    // Reminder routes must be registered before the tasks catch-all
+    api.route("GET /api/tasks/{taskId}/reminders", reminderHandler, listAuth);
+    api.route("POST /api/tasks/{taskId}/reminders", reminderHandler, listAuth);
+    api.route("PATCH /api/tasks/{taskId}/reminders/{id}", reminderHandler, listAuth);
+    api.route("DELETE /api/tasks/{taskId}/reminders/{id}", reminderHandler, listAuth);
+    api.route("POST /api/reminders/process-due", reminderHandler, listAuth);
+
+    const notificationHandler = {
+      handler: "apps/api/src/notifications/index.handler",
+      runtime: "nodejs22.x",
+      environment: {
+        TABLE_NAME: table.name,
+      },
+      permissions: [
+        {
+          actions: [
+            "dynamodb:GetItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:Query",
+          ],
+          resources: [table.arn, $interpolate`${table.arn}/index/GSI1`],
+        },
+      ],
+    };
+
+    api.route("GET /api/notifications", notificationHandler, listAuth);
+    api.route("PATCH /api/notifications/{id}/read", notificationHandler, listAuth);
+    api.route("ANY /api/notifications/{proxy+}", notificationHandler, listAuth);
+
     api.route("GET /api/tasks", taskHandler, listAuth);
     api.route("POST /api/tasks", taskHandler, listAuth);
     api.route("ANY /api/tasks/{proxy+}", taskHandler, listAuth);

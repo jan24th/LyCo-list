@@ -1,0 +1,15 @@
+meta {
+  name: delete reminder
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/tasks/{{taskId}}/reminders/{{reminderId}}?expectedVersion=1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  expectedVersion: 1
+}

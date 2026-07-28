@@ -1,0 +1,21 @@
+meta {
+  name: create reminder
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/tasks/{{taskId}}/reminders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "taskId": "{{taskId}}",
+    "triggerAt": "2026-01-15T08:00:00.000Z",
+    "recurrence": "none",
+    "timeZone": "Asia/Shanghai",
+    "isEnabled": true
+  }
+}

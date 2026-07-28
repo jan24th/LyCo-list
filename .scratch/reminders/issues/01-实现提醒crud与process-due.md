@@ -1,6 +1,6 @@
 Title: 实现提醒 CRUD 与 process-due
 Old-ID: 012
-Status: ready-for-agent
+Status: resolved
 Labels: api,reminders
 Estimate: 5
 Blocked by: ../../tasks/issues/02-实现任务与无级子任务crud.md

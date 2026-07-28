@@ -1,0 +1,11 @@
+meta {
+  name: process due reminders
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/reminders/process-due
+  body: none
+  auth: inherit
+}
