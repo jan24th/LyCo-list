@@ -30,6 +30,7 @@ import {
   restoreTask,
   updateTask,
 } from "./db.js";
+import { querySmartList, type SmartListType } from "./smart.js";
 
 function getUserId(event: APIGatewayProxyEventV2WithJWTAuthorizer): string {
   return typeof event.requestContext.authorizer.jwt.claims.sub === "string"
@@ -56,6 +57,31 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
     const now = new Date().toISOString();
 
     if (method === "GET" && path === "/api/tasks") {
+      const smartParam = event.queryStringParameters?.smart;
+      if (smartParam) {
+        const validTypes = ["today", "scheduled", "all", "flagged", "completed", "assigned"];
+        if (!validTypes.includes(smartParam)) {
+          return buildResponse(400, { error: `Invalid smart list type: ${smartParam}` });
+        }
+        const query = parseRequest(taskQuerySchema, {
+          limit: event.queryStringParameters?.limit,
+          cursor: event.queryStringParameters?.cursor,
+        });
+        const result = await querySmartList(
+          smartParam as SmartListType,
+          userId,
+          now,
+          query.limit,
+          query.cursor ? decodeCursor(query.cursor) : undefined,
+        );
+        return buildResponse(200, {
+          items: result.items,
+          ...(result.nextCursor
+            ? { nextCursor: encodeCursor(result.nextCursor) }
+            : {}),
+        });
+      }
+
       const query = parseRequest(taskQuerySchema, {
         listId: event.queryStringParameters?.listId,
         limit: event.queryStringParameters?.limit,
