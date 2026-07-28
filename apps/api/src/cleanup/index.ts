@@ -20,10 +20,13 @@ export const handler = async (): Promise<void> => {
     totalProcessed += result.processedCount;
     cursor = result.nextCursor;
 
-    // If we're close to timeout, stop and let the next invocation continue
+    // If we're close to timeout, stop and let the next invocation continue.
+    // Note: cursor is not persisted across invocations — next Cron invocation
+    // will re-scan from the start. This is safe because deletion is conditional
+    // on deletionVersion matching, and scale is well within 14-minute capacity.
     if (Date.now() > deadlineMs) {
       console.log(
-        `Cleanup stopping early: processed ${totalProcessed} items, more remain`,
+        `Cleanup timeout: processed ${totalProcessed} items, cursor: ${JSON.stringify(cursor)}`,
       );
       break;
     }
